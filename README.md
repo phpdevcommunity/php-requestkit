@@ -16,7 +16,7 @@ Simplify your request processing with `php-requestkit`. This library allows you 
 ## Installation
 
 ```bash
-composer require phpdevcommunity/request-kit
+composer require phpdevcommunity/php-requestkit
 ```
 
 ## Basic Usage

@@ -4,6 +4,9 @@ namespace Test\PhpDevCommunity\RequestKit\Model;
 
 class AddressTest
 {
+    /**
+     * @var string
+     */
     private string $street;
     private string $city;
 

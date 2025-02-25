@@ -1,6 +1,7 @@
 <?php
 
 namespace PhpDevCommunity\RequestKit;
+use PhpDevCommunity\RequestKit\Schema\Schema;
 use PhpDevCommunity\RequestKit\Type\AbstractType;
 use PhpDevCommunity\RequestKit\Type\ArrayOfType;
 use PhpDevCommunity\RequestKit\Type\BoolType;
@@ -56,9 +57,13 @@ final class Type
         return new EmailType();
     }
 
-    public static function item(array $definitions, ?string $object = null) : ItemType
+    public static function item(array $definitions) : ItemType
     {
-        return new ItemType($definitions, $object);
+        return new ItemType(Schema::create($definitions));
+    }
+    public static function itemObject(string $object) : ItemType
+    {
+        return new ItemType(Schema::createFromObject($object));
     }
 
     public static function arrayOf(AbstractType $type) : ArrayOfType
@@ -68,12 +73,15 @@ final class Type
 
     public static function type(string $type): AbstractType
     {
+        if ($type=== \DateTimeInterface::class) {
+            return self::datetime();
+        }
         if (class_exists($type)) {
-            return self::item([], $type);
+            return self::itemObject($type);
         }
         if (str_starts_with( $type, 'array_of_item:')) {
             $class = substr($type, 14);
-            return self::arrayOf(self::type($class));
+            return self::arrayOf(self::itemObject($class));
         }
         switch ($type) {
             case 'array_of_string':

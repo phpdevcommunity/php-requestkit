@@ -10,12 +10,9 @@ final class ItemType extends AbstractType
 {
     private Schema $schema;
 
-    public function __construct(array $definitions, ?string $object = null)
+    public function __construct(Schema $schema)
     {
-        $this->schema = Schema::create($definitions);
-        if ($object !== null) {
-            $this->schema->object($object);
-        }
+        $this->schema = $schema;
     }
 
     public function patch(): self

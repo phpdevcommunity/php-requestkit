@@ -2,6 +2,7 @@
 
 namespace PhpDevCommunity\RequestKit\Schema;
 
+use PhpDevCommunity\RequestKit\Generator\DefinitionGenerator;
 use PhpDevCommunity\RequestKit\Type\AbstractType;
 
 final class Schema extends AbstractSchema
@@ -33,6 +34,7 @@ final class Schema extends AbstractSchema
             throw new \LogicException(sprintf('Class "%s" does not exist', $object));
         }
         $this->object = $object;
+        $this->setDefinitions(DefinitionGenerator::generateFromObject($object));
         return $this;
     }
 

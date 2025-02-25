@@ -13,9 +13,15 @@ class UserModelTest
 
     /**
      * @var array<AddressTest>
+     * @required
      */
     private array $addresses = [];
-    private bool $active;
+    private bool $active = false;
+
+    public function __construct()
+    {
+        $this->createdAt = new \DateTime();
+    }
 
     public function getName(): string
     {

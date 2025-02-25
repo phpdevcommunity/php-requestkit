@@ -21,6 +21,11 @@ abstract class AbstractSchema
         return $this;
     }
 
+    final public function isPatchMode(): bool
+    {
+        return $this->patchMode;
+    }
+
     final public function title(string $title): self
     {
         $this->title = $title;
@@ -54,47 +59,9 @@ abstract class AbstractSchema
 
     final public function process(array $data): SchemaAccessor
     {
-        if (empty($data)) {
-            throw new InvalidDataException('No data provided', 0);
-        }
-
-        $errors = [];
-        $dataFiltered = [];
-        foreach ($this->getDefinitions() as $key => $definition) {
-            $aliases = array_merge([$key], $definition->getAliases());
-            $keyToUse = null;
-            foreach ($aliases as $alias) {
-                if (array_key_exists($alias, $data)) {
-                    $keyToUse = $alias;
-                    break;
-                }
-            }
-
-            if ($this->patchMode && $keyToUse === null) {
-                continue;
-            }
-
-            if ($this->patchMode && $definition instanceof ItemType) {
-                $definition->patch();
-            }
-
-            $value = $data[$keyToUse] ?? null;
-            $result = $definition->validate($value);
-            if (!$result->isValid()) {
-                if (!$result->isGlobalError()) {
-                    $errors[$key] = $result->getErrors();
-                } else {
-                    $errors[$key] = $result->getError();
-                }
-                continue;
-            }
-            $dataFiltered[$key] = $result->getValue();
-        }
-        $errors = array_dot($errors);
-        if (!empty($errors)) {
-            throw new InvalidDataException('Validation failed', 0, $errors);
-        }
-        return new SchemaAccessor($dataFiltered);
+        $accessor = new SchemaAccessor($data, $this);
+        $accessor->execute();
+        return $accessor;
     }
 
     /**
@@ -118,6 +85,9 @@ abstract class AbstractSchema
        return Schema::create($definitions + $this->definitions());
     }
 
+    /**
+     * @return array<string, AbstractType>
+     */
     final public function copyDefinitions() : array
     {
         $definitions = [];

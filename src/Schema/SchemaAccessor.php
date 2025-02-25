@@ -3,18 +3,76 @@
 namespace PhpDevCommunity\RequestKit\Schema;
 
 use InvalidArgumentException;
+use PhpDevCommunity\RequestKit\Exceptions\InvalidDataException;
+use PhpDevCommunity\RequestKit\Hydrator\ObjectHydrator;
+use PhpDevCommunity\RequestKit\Type\ItemType;
 
 final class SchemaAccessor
 {
-    private \ArrayObject $data;
+    private array $initialData;
+    private AbstractSchema $schema;
+    private ?\ArrayObject $data = null;
+    private bool $executed = false;
 
-    public function __construct(array $data)
+    public function __construct(array $initialData, AbstractSchema $schema)
     {
-     $this->data = new \ArrayObject($data);
+        $this->initialData = $initialData;
+        $this->schema = $schema;
+    }
+
+    public function execute(): void
+    {
+        $data = $this->initialData;
+        if (empty($data)) {
+            throw new InvalidDataException('No data provided', 0);
+        }
+
+        $errors = [];
+        $dataFiltered = [];
+        foreach ($this->schema->copyDefinitions() as $key => $definition) {
+            $aliases = array_merge([$key], $definition->getAliases());
+            $keyToUse = null;
+            foreach ($aliases as $alias) {
+                if (array_key_exists($alias, $data)) {
+                    $keyToUse = $alias;
+                    break;
+                }
+            }
+
+            if ($this->schema->isPatchMode() && $keyToUse === null) {
+                continue;
+            }
+
+            if ($this->schema->isPatchMode() && $definition instanceof ItemType) {
+                $definition->patch();
+            }
+
+            $value = $data[$keyToUse] ?? null;
+            $result = $definition->validate($value);
+            if (!$result->isValid()) {
+                if (!$result->isGlobalError()) {
+                    $errors[$key] = $result->getErrors();
+                } else {
+                    $errors[$key] = $result->getError();
+                }
+                continue;
+            }
+            $dataFiltered[$key] = $result->getValue();
+        }
+        $errors = array_dot($errors);
+        if (!empty($errors)) {
+            throw new InvalidDataException('Validation failed', 0, $errors);
+        }
+
+        $this->data = new \ArrayObject($dataFiltered);
+        $this->executed = true;
     }
 
     public function get(string $key)
     {
+        if (!$this->executed) {
+            throw new InvalidArgumentException('Schema not executed, call execute() first');
+        }
         $current = $this->toArray();
         $pointer = strtok($key, '.');
         while ($pointer !== false) {
@@ -29,6 +87,16 @@ final class SchemaAccessor
 
     public function toArray(): array
     {
+        if (!$this->executed) {
+            throw new InvalidArgumentException('Schema not executed, call execute() first');
+        }
+
         return $this->data->getIterator()->getArrayCopy();
     }
+
+    public function toObject(): object
+    {
+        return (new ObjectHydrator($this->schema->getObject(), $this->toArray(), $this->schema->copyDefinitions()))->hydrate();
+    }
+
 }

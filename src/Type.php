@@ -56,13 +56,59 @@ final class Type
         return new EmailType();
     }
 
-    public static function item(array $definitions) : ItemType
+    public static function item(array $definitions, ?string $object = null) : ItemType
     {
-        return new ItemType($definitions);
+        return new ItemType($definitions, $object);
     }
 
     public static function arrayOf(AbstractType $type) : ArrayOfType
     {
         return new ArrayOfType($type);
+    }
+
+    public static function type(string $type): AbstractType
+    {
+        if (class_exists($type)) {
+            return self::item([], $type);
+        }
+        if (str_starts_with( $type, 'array_of_item:')) {
+            $class = substr($type, 14);
+            return self::arrayOf(self::type($class));
+        }
+        switch ($type) {
+            case 'array_of_string':
+                return self::arrayOf(self::type('string'));
+            case 'array_of_int':
+                return self::arrayOf(self::type('int'));
+            case 'array_of_numeric':
+                return self::arrayOf(self::type('numeric'));
+            case 'array_of_date':
+                return self::arrayOf(self::type('date'));
+            case 'array_of_datetime':
+                return self::arrayOf(self::type('datetime'));
+            case 'array_of_float':
+                return self::arrayOf(self::type('float'));
+            case 'array_of_email':
+                return self::arrayOf(self::type('email'));
+            case 'int':
+                return self::int();
+            case 'string':
+                return self::string();
+            case 'numeric':
+                return self::numeric();
+            case 'bool':
+                return self::bool();
+            case 'date':
+                return self::date();
+            case 'datetime':
+                return self::datetime();
+            case 'float':
+                return self::float();
+            case 'email':
+                return self::email();
+            default:
+                throw new \LogicException('Unknown type ' . $type);
+        }
+
     }
 }

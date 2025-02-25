@@ -366,7 +366,7 @@ class SchemaTest extends TestCase
             ]),
         ]);
 
-        $this->assertEquals($schema1->generateExampleData(), [
+        $this->assertEquals($schema2->generateExampleData(), [
             'name' => 'John Doe',
             'age' => 20,
             'roles' => ['admin'],

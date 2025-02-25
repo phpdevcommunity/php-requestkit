@@ -31,6 +31,11 @@ final class ArrayOfType extends AbstractType
         $this->default([]);
     }
 
+    public function getCopyType(): AbstractType
+    {
+        return clone $this->type;
+    }
+
     protected function validateValue(ValidationResult $result): void
     {
         if ($this->isRequired() && empty($this->min)) {

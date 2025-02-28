@@ -2,39 +2,56 @@
 
 namespace PhpDevCommunity\RequestKit\Schema;
 
+use PhpDevCommunity\RequestKit\Builder\SchemaObjectFactory;
 use PhpDevCommunity\RequestKit\Generator\DefinitionGenerator;
 use PhpDevCommunity\RequestKit\Type\AbstractType;
+use ReflectionException;
 
 final class Schema extends AbstractSchema
 {
-    private ?string $object = null;
+    /**
+     * @var null|string|object
+     */
+    private $object = null;
 
     /**
      * @var AbstractType[]
      */
     private array $definitions;
 
-    private function __construct()
-    {
-    }
 
     public static function create(array $definitions): Schema
     {
         return (new self())->setDefinitions($definitions);
     }
 
-    public static function createFromObject(string $object): Schema
+    /**
+     * @param string|object $object
+     * @param SchemaObjectFactory $factory
+     * @return Schema
+     */
+    public static function createFromObject($object, SchemaObjectFactory $factory): Schema
     {
-        return (new self())->setObject($object);
+        return (new self())->generateDefinitionFromObject($object,$factory);
     }
 
-    private function setObject(string $object): self
+    final public function extend(array $definitions): Schema
     {
-        if (!class_exists($object)) {
-            throw new \LogicException(sprintf('Class "%s" does not exist', $object));
-        }
+        $schema = clone $this;
+        $schema->setDefinitions($definitions + $this->definitions());
+        return $schema;
+    }
+
+    /**
+     * @param string|object $object
+     * @param SchemaObjectFactory $factory
+     * @return self
+     */
+    private function generateDefinitionFromObject($object, SchemaObjectFactory $factory): self
+    {
+        $definitionGenerator = new DefinitionGenerator($factory);
+        $this->setDefinitions($definitionGenerator->generateFromObject($object));
         $this->object = $object;
-        $this->setDefinitions(DefinitionGenerator::generateFromObject($object));
         return $this;
     }
 
@@ -44,10 +61,11 @@ final class Schema extends AbstractSchema
         return $this;
     }
 
-     public function getObject() : ?string
+    public function getObject()
     {
         return $this->object;
     }
+
     protected function definitions(): array
     {
         return $this->definitions;

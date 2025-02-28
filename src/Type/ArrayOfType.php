@@ -36,6 +36,13 @@ final class ArrayOfType extends AbstractType
         return clone $this->type;
     }
 
+    protected function forceDefaultValue( ValidationResult $result): void
+    {
+        if ($result->getValue() === null) {
+            $result->setValue([]);
+        }
+    }
+
     protected function validateValue(ValidationResult $result): void
     {
         if ($this->isRequired() && empty($this->min)) {
@@ -46,7 +53,6 @@ final class ArrayOfType extends AbstractType
             $result->setError('Value must be an array');
             return;
         }
-
 
         $definitions = [];
         $count = count($values);

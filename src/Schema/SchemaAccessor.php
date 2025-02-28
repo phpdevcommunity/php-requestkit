@@ -14,7 +14,7 @@ final class SchemaAccessor
     private ?\ArrayObject $data = null;
     private bool $executed = false;
 
-    public function __construct(array $initialData, AbstractSchema $schema)
+    public function __construct(array $initialData, Schema $schema)
     {
         $this->initialData = $initialData;
         $this->schema = $schema;
@@ -47,7 +47,12 @@ final class SchemaAccessor
                 $definition->patch();
             }
 
-            $value = $data[$keyToUse] ?? null;
+            if (array_key_exists( $keyToUse, $data)) {
+                $value = $data[$keyToUse];
+            }else {
+                $value = $definition->getDefault();
+            }
+
             $result = $definition->validate($value);
             if (!$result->isValid()) {
                 if (!$result->isGlobalError()) {
@@ -96,6 +101,14 @@ final class SchemaAccessor
 
     public function toObject(): object
     {
+        if (!$this->executed) {
+            throw new InvalidArgumentException('Schema not executed, call execute() first');
+        }
+
+        if ($this->schema->getObject() === null) {
+            throw new InvalidArgumentException('Schema does not have an object, cannot hydrate');
+        }
+
         return (new ObjectHydrator($this->schema->getObject(), $this->toArray(), $this->schema->copyDefinitions()))->hydrate();
     }
 

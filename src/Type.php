@@ -13,6 +13,7 @@ use PhpDevCommunity\RequestKit\Type\IntType;
 use PhpDevCommunity\RequestKit\Type\ItemType;
 use PhpDevCommunity\RequestKit\Type\NumericType;
 use PhpDevCommunity\RequestKit\Type\StringType;
+use PhpDevCommunity\RequestKit\Utils\DateOnly;
 
 final class Type
 {
@@ -61,27 +62,29 @@ final class Type
     {
         return new ItemType(Schema::create($definitions));
     }
-    public static function itemObject(string $object) : ItemType
-    {
-        return new ItemType(Schema::createFromObject($object));
-    }
-
     public static function arrayOf(AbstractType $type) : ArrayOfType
     {
         return new ArrayOfType($type);
     }
 
-    public static function type(string $type): AbstractType
+    public static function typeObject(string $type): ?AbstractType
     {
-        if ($type=== \DateTimeInterface::class) {
+        if ($type=== DateOnly::class) {
+            return self::date();
+        }
+
+        if ($type === \DateTimeInterface::class || is_subclass_of( $type, \DateTimeInterface::class)) {
             return self::datetime();
         }
-        if (class_exists($type)) {
-            return self::itemObject($type);
-        }
-        if (str_starts_with( $type, 'array_of_item:')) {
-            $class = substr($type, 14);
-            return self::arrayOf(self::itemObject($class));
+
+        return null;
+    }
+
+    public static function type(string $type): AbstractType
+    {
+        $definition = self::typeObject($type);
+        if ($definition) {
+            return $definition;
         }
         switch ($type) {
             case 'array_of_string':

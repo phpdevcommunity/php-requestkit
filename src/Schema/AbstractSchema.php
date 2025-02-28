@@ -80,18 +80,13 @@ abstract class AbstractSchema
         return $definitions;
     }
 
-    final public function extend(array $definitions): Schema
-    {
-       return Schema::create($definitions + $this->definitions());
-    }
-
     /**
      * @return array<string, AbstractType>
      */
     final public function copyDefinitions() : array
     {
         $definitions = [];
-        foreach ($this->definitions() as $key => $definition) {
+        foreach ($this->getDefinitions() as $key => $definition) {
             $definitions[$key] = clone $definition;
         }
         return $definitions;

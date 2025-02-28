@@ -6,9 +6,15 @@ class AddressTest
 {
     /**
      * @var string
+     * @example toto
      */
-    private string $street;
-    private string $city;
+    private string $street = '';
+    private string $city = '';
+
+    /**
+     * @var array<string>
+     */
+    private array $tags = [];
 
     public function getStreet(): string
     {
@@ -29,6 +35,17 @@ class AddressTest
     public function setCity(string $city): AddressTest
     {
         $this->city = $city;
+        return $this;
+    }
+
+    public function getTags(): array
+    {
+        return $this->tags;
+    }
+
+    public function setTags(array $tags): AddressTest
+    {
+        $this->tags = $tags;
         return $this;
     }
 }

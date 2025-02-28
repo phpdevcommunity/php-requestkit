@@ -61,9 +61,13 @@ abstract class AbstractType
         return $this->required;
     }
 
-    final  protected function getDefault()
+    final  public function getDefault()
     {
-        return $this->default;
+        $default = $this->default;
+        if (is_callable($default)) {
+            $default = $default();
+        }
+        return $default;
     }
 
     final public function getAliases(): array
@@ -91,22 +95,14 @@ abstract class AbstractType
     final public function validate($value): ValidationResult
     {
         $result = new ValidationResult($value);
-
-        if ($result->getValue() === null && $this->getDefault() !== null) {
-            $default = $this->getDefault();
-            if (is_callable($default)) {
-                $default = $default();
-            }
-            $result->setValue($default);
-        }
+        $this->forceDefaultValue($result);
 
         if ($result->getValue() === null || (is_string($result->getValue())) && trim($result->getValue()) === '') {
             if ($this->isRequired()) {
-                $result->setError("Value is required, but got null");
+                $result->setError("Value is required, but got null or empty string");
             }
             return $result;
         }
-
 
         $this->transformValue($result);
         $this->validateValue($result);
@@ -115,4 +111,8 @@ abstract class AbstractType
     }
 
     abstract protected function validateValue(ValidationResult $result): void;
+
+    protected function forceDefaultValue(ValidationResult $result): void
+    {
+    }
 }

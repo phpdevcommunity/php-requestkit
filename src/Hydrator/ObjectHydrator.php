@@ -9,13 +9,12 @@ use ReflectionClass;
 
 final class ObjectHydrator
 {
-    private string $object;
+    private $object;
     private array $data;
     private array $definitions;
 
-    public function __construct(string $object, array $data, array $definitions)
+    public function __construct($object, array $data, array $definitions)
     {
-
         $this->object = $object;
         $this->data = $data;
         $this->definitions = $definitions;
@@ -25,54 +24,53 @@ final class ObjectHydrator
     {
         return self::hydrateObject($this->object, $this->data, $this->definitions);
     }
-
-    public static function hydrateObject(string $objectClass, array $data, array $definitions): object
+    private function hydrateObject($objectClass, array $data, array $definitions): object
     {
-        if (!class_exists($objectClass)) {
-            throw new LogicException('Class ' . $objectClass . ' does not exist');
+        if (is_object($objectClass)) {
+            $object = $objectClass;
+        }else {
+            $object = new $objectClass();
         }
 
-        $reflection = new ReflectionClass($objectClass);
-        $object = $reflection->newInstance();
         foreach ($definitions as $key => $definition) {
             if (!array_key_exists($key, $data)) {
                 continue;
             }
             $value = $data[$key];
-            if (!$reflection->hasProperty($key)) {
-                $key = self::snakeCaseToCamelCase($key);
-            }
-            $property = $reflection->getProperty($key);
-            $property->setAccessible(true);
+            $propertyName = self::snakeCaseToCamelCase($key);
+
             if (is_array($value) && $definition instanceof ItemType) {
-                $value = self::hydrateFromItemType($property, $definition, $value);
+                $value = self::hydrateFromItemType( $definition, $value);
             }elseif (is_array($value) && $definition instanceof ArrayOfType) {
                 $type = $definition->getCopyType();
                 if ($type instanceof ItemType) {
                     $elements = [];
                     foreach ($value as $element) {
-                        $elements[] = self::hydrateFromItemType($property, $type, $element);
+                        $elements[] = self::hydrateFromItemType($type, $element);
                     }
                     $value = $elements;
                 }
             }
 
-            $property->setValue($object, $value);
+            if (isset($object->$propertyName)) {
+                $object->$propertyName = $value;
+            }elseif (method_exists($object, 'set' . $propertyName)) {
+                $object->{'set' . $propertyName}($value);
+            }else {
+                throw new LogicException('Can not set property ' . $propertyName . ' on object ' . get_class($object));
+            }
         }
 
         return $object;
     }
 
-    private static function hydrateFromItemType(?\ReflectionProperty $property, ItemType $definition, array $data): object
+    private function hydrateFromItemType(ItemType $definition, array $data): object
     {
-        $propertyName = $property->getName();
-        $propertyType = $property->getType();
-
-        $objectToHydrate = $definition->getObject() ?: ($propertyType ? $propertyType->getName() : null);
+        $objectToHydrate = $definition->getObject();
         if ($objectToHydrate === null) {
-            throw new LogicException('No object to hydrate, property ' . $propertyName . ' has no type and no object defined in the schema');
+            throw new LogicException('No object to hydrate, can not hydrate');
         }
-        return self::hydrateObject($objectToHydrate, $data, $definition->copyDefinitions());
+        return $this->hydrateObject($objectToHydrate, $data, $definition->copyDefinitions());
     }
 
     private static function snakeCaseToCamelCase(string $snakeCaseString): string

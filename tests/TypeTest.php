@@ -65,7 +65,7 @@ class TypeTest extends \PhpDevCommunity\UniTester\TestCase
         $type->required();
         $result = $type->validate(null);
         $this->assertFalse($result->isValid());
-        $this->assertEquals('Value is required, but got null', $result->getError());
+        $this->assertEquals('Value is required, but got null or empty string', $result->getError());
 
 
         $type->length(1);

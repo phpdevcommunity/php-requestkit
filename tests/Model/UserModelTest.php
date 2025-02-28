@@ -2,18 +2,19 @@
 
 namespace Test\PhpDevCommunity\RequestKit\Model;
 
+use PhpDevCommunity\RequestKit\Utils\DateOnly;
+
 class UserModelTest
 {
-    private string $name;
-    private ?int $age; // Nullable as it's not required
-    private ?string $email; // Nullable as it's not required
-    private ?\DateTimeInterface $dateOfBirth; // Nullable as it's not required
-    private ?\DateTimeInterface $createdAt;
+    private string $name = '';
+    private ?int $age = null; // Nullable as it's not required
+    private ?string $email = null; // Nullable as it's not required
+    private ?DateOnly $dateOfBirth = null; // Nullable as it's not required
+    private ?\DateTimeInterface $createdAt = null;
     private ?AddressTest $address = null;
 
     /**
      * @var array<AddressTest>
-     * @required
      */
     private array $addresses = [];
     private bool $active = false;
@@ -83,7 +84,7 @@ class UserModelTest
         return $this->address;
     }
 
-    public function setAddress(AddressTest $address): UserModelTest
+    public function setAddress(?AddressTest $address): UserModelTest
     {
         $this->address = $address;
         return $this;

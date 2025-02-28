@@ -6,7 +6,7 @@ use PhpDevCommunity\RequestKit\ValidationResult;
 use PhpDevCommunity\Validator\Assert\Email;
 use PhpDevCommunity\Validator\Assert\StringLength;
 
-final class DateTimeType extends AbstractStringType
+final class DateTimeType extends AbstractType
 {
     private string $format = 'Y-m-d H:i:s';
     public function format(string $format): self

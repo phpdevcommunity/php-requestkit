@@ -50,16 +50,20 @@ abstract class AbstractSchema
 
     final public function processHttpRequest(ServerRequestInterface $request): SchemaAccessor
     {
+        if ($request->getHeader('Content-Type')[0] === 'application/json') {
+            return $this->processJsonInput($request->getBody()->getContents());
+        }
         return $this->process($request->getParsedBody());
     }
+
     final public function processHttpQuery(ServerRequestInterface $request): SchemaAccessor
     {
-        return $this->process($request->getQueryParams());
+        return $this->process($request->getQueryParams(), true);
     }
 
-    final public function process(array $data): SchemaAccessor
+    final public function process(array $data, bool $allowEmptyData = false): SchemaAccessor
     {
-        $accessor = new SchemaAccessor($data, $this);
+        $accessor = new SchemaAccessor($data, $this, $allowEmptyData);
         $accessor->execute();
         return $accessor;
     }

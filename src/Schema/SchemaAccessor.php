@@ -14,16 +14,19 @@ final class SchemaAccessor
     private ?\ArrayObject $data = null;
     private bool $executed = false;
 
-    public function __construct(array $initialData, Schema $schema)
+    private bool $allowEmptyData;
+
+    public function __construct(array $initialData, Schema $schema, bool $allowEmptyData = false)
     {
         $this->initialData = $initialData;
         $this->schema = $schema;
+        $this->allowEmptyData = $allowEmptyData;
     }
 
     public function execute(): void
     {
         $data = $this->initialData;
-        if (empty($data)) {
+        if (empty($data) && $this->allowEmptyData === false) {
             throw new InvalidDataException('No data provided', 0);
         }
 

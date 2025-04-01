@@ -22,7 +22,7 @@
     "php": ">=7.4",
     "ext-json": "*",
     "phpdevcommunity/php-validator": "^1.0",
-    "psr/http-message": "^2.0"
+    "psr/http-message": "^1.0 || ^2.0"
   },
   "require-dev": {
     "phpdevcommunity/unitester": "^0.1.0@alpha"

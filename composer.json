@@ -21,7 +21,7 @@
   "require": {
     "php": ">=7.4",
     "ext-json": "*",
-    "phpdevcommunity/php-validator": "^1.1",
+    "phpdevcommunity/php-validator": "^1.0",
     "psr/http-message": "^2.0"
   },
   "require-dev": {

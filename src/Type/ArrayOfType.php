@@ -12,6 +12,7 @@ final class ArrayOfType extends AbstractType
 
     private ?int $min = null;
     private ?int $max = null;
+    private ?bool $acceptStringKeys = false;
 
     public function min(int $min): self
     {
@@ -22,6 +23,12 @@ final class ArrayOfType extends AbstractType
     public function max(int $max): self
     {
         $this->max = $max;
+        return $this;
+    }
+
+    public function acceptStringKeys(): self
+    {
+        $this->acceptStringKeys = true;
         return $this;
     }
 
@@ -66,9 +73,12 @@ final class ArrayOfType extends AbstractType
         }
 
         foreach ($values as $key => $value) {
-            if (!is_int($key)) {
+            if ($this->acceptStringKeys === false && !is_int($key)) {
                 $result->setError('All keys must be integers');
                 return;
+            }
+            if (is_string($key)) {
+                $key = trim($key);
             }
             $definitions[$key] = $this->type;
         }

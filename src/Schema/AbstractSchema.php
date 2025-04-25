@@ -50,7 +50,7 @@ abstract class AbstractSchema
 
     final public function processHttpRequest(ServerRequestInterface $request): SchemaAccessor
     {
-        if ($request->getHeader('Content-Type')[0] === 'application/json') {
+        if (in_array('application/json', $request->getHeader('Content-Type'))) {
             return $this->processJsonInput($request->getBody()->getContents());
         }
         return $this->process($request->getParsedBody());

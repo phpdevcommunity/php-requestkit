@@ -41,6 +41,7 @@ class SchemaTest extends TestCase
         $this->testMultipleValidationErrors();
         $this->testNestedData();
         $this->testCollection();
+        $this->testArray();
         $this->testExtend();
         $this->testExampleData();
 
@@ -375,5 +376,26 @@ class SchemaTest extends TestCase
                 'city' => 'London',
             ]
         ]);
+    }
+
+    private function testArray()
+    {
+
+        $schema = Schema::create([
+            'roles' => Type::arrayOf(Type::string()->strict())->required()->example('admin'),
+            'dependencies' => Type::arrayOf(Type::string()->strict())->acceptStringKeys()
+        ]);
+
+        $data = [
+            'roles' => ['admin'],
+            'dependencies' => [
+                'key1' => 'value1',
+                'key2' => 'value2',
+            ],
+        ];
+        $result = $schema->process($data);
+        $this->assertStrictEquals('admin', $result->get('roles.0'));
+        $this->assertStrictEquals('value1', $result->get('dependencies.key1'));
+        $this->assertStrictEquals('value2', $result->get('dependencies.key2'));
     }
 }

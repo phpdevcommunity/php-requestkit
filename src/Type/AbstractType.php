@@ -24,6 +24,21 @@ abstract class AbstractType
         return $this;
     }
 
+    final public function requiredIf($condition) : self
+    {
+        if (!is_bool($condition) && !is_callable($condition)) {
+            throw new \InvalidArgumentException('condition must be boolean or callable');
+        }
+
+        if (is_callable($condition)) {
+            $condition = $condition();
+        }
+        if ($condition) {
+            $this->required();
+        }
+        return $this;
+    }
+
     final public function optional(): self
     {
         $this->required = false;

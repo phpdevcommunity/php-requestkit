@@ -38,6 +38,13 @@ abstract class AbstractSchema
         return $this;
     }
 
+    /**
+     * @param string $json
+     * @param int $depth
+     * @param int $flags
+     * @return SchemaAccessor
+     * @throws InvalidDataException
+     */
     final public function processJsonInput(string $json, int $depth = 512, int $flags = 0): SchemaAccessor
     {
         $data = json_decode($json, true, $depth , $flags);
@@ -48,6 +55,11 @@ abstract class AbstractSchema
         return $this->process($data);
     }
 
+    /**
+     * @param ServerRequestInterface $request
+     * @return SchemaAccessor
+     * @throws InvalidDataException
+     */
     final public function processHttpRequest(ServerRequestInterface $request): SchemaAccessor
     {
         if (in_array('application/json', $request->getHeader('Content-Type'))) {
@@ -56,11 +68,22 @@ abstract class AbstractSchema
         return $this->process($request->getParsedBody());
     }
 
+    /**
+     * @param ServerRequestInterface $request
+     * @return SchemaAccessor
+     * @throws InvalidDataException
+     */
     final public function processHttpQuery(ServerRequestInterface $request): SchemaAccessor
     {
         return $this->process($request->getQueryParams(), true);
     }
 
+    /**
+     * @param array $data
+     * @param bool $allowEmptyData
+     * @return SchemaAccessor
+     * @throws InvalidDataException
+     */
     final public function process(array $data, bool $allowEmptyData = false): SchemaAccessor
     {
         $accessor = new SchemaAccessor($data, $this, $allowEmptyData);

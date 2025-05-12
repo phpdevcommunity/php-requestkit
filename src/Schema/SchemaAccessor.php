@@ -82,6 +82,9 @@ final class SchemaAccessor
             throw new InvalidArgumentException('Schema not executed, call execute() first');
         }
         $current = $this->toArray();
+        if (array_key_exists($key, $current)) {
+            return $current[$key];
+        }
         $pointer = strtok($key, '.');
         while ($pointer !== false) {
             if (!array_key_exists($pointer, $current)) {

@@ -4,16 +4,15 @@ namespace PhpDevCommunity\RequestKit\Type;
 
 use PhpDevCommunity\RequestKit\Exceptions\InvalidDataException;
 use PhpDevCommunity\RequestKit\Schema\Schema;
+use PhpDevCommunity\RequestKit\Utils\KeyValueObject;
 use PhpDevCommunity\RequestKit\ValidationResult;
 
-final class ArrayOfType extends AbstractType
+final class MapType extends AbstractType
 {
     private AbstractType $type;
 
     private ?int $min = null;
     private ?int $max = null;
-    private bool $acceptStringKeys = false;
-    private bool $acceptCommaSeparatedValues = false;
 
     public function min(int $min): self
     {
@@ -27,22 +26,10 @@ final class ArrayOfType extends AbstractType
         return $this;
     }
 
-    public function acceptStringKeys(): self
-    {
-        $this->acceptStringKeys = true;
-        return $this;
-    }
-
-    public function acceptCommaSeparatedValues(): self
-    {
-        $this->acceptCommaSeparatedValues = true;
-        return $this;
-    }
-
     public function __construct(AbstractType $type)
     {
         $this->type = $type;
-        $this->default([]);
+        $this->default(new KeyValueObject());
     }
 
     public function getCopyType(): AbstractType
@@ -50,10 +37,10 @@ final class ArrayOfType extends AbstractType
         return clone $this->type;
     }
 
-    protected function forceDefaultValue( ValidationResult $result): void
+    protected function forceDefaultValue(ValidationResult $result): void
     {
         if ($result->getValue() === null) {
-            $result->setValue([]);
+            $result->setValue(new KeyValueObject());
         }
     }
 
@@ -63,17 +50,11 @@ final class ArrayOfType extends AbstractType
             $this->min = 1;
         }
         $values = $result->getValue();
-        if (is_string($values) && $this->acceptCommaSeparatedValues) {
-            $values = explode(',', $values);
-            $values = array_map('trim', $values);
-            $values = array_filter($values, fn($v) => $v !== '');
-        }
-        if (!is_array($values)) {
-            $result->setError('Value must be an array');
+        if (!is_array($values) && !$values instanceof KeyValueObject) {
+            $result->setError('Value must be an array or KeyValueObject');
             return;
         }
 
-        $definitions = [];
         $count = count($values);
         if ($this->min && $count < $this->min) {
             $result->setError("Value must have at least $this->min item(s)");
@@ -84,18 +65,17 @@ final class ArrayOfType extends AbstractType
             return;
         }
 
+        $definitions = [];
         foreach ($values as $key => $value) {
-            if ($this->acceptStringKeys === false && !is_int($key)) {
-                $result->setError('All keys must be integers');
+            if (!is_string($key)) {
+                $result->setError(sprintf( 'Key "%s" must be a string, got %s', $key, gettype($key)));
                 return;
             }
-            if (is_string($key)) {
-                $key = trim($key);
-            }
+            $key = trim($key);
             $definitions[$key] = $this->type;
         }
         if (empty($definitions)) {
-            $result->setValue([]);
+            $result->setValue(new KeyValueObject());
             return;
         }
 
@@ -107,6 +87,6 @@ final class ArrayOfType extends AbstractType
             return;
         }
 
-        $result->setValue($values);
+        $result->setValue(new KeyValueObject($values->toArray()));
     }
 }

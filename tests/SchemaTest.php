@@ -6,6 +6,7 @@ use DateTime;
 use PhpDevCommunity\RequestKit\Exceptions\InvalidDataException;
 use PhpDevCommunity\RequestKit\Schema\Schema;
 use PhpDevCommunity\RequestKit\Type;
+use PhpDevCommunity\RequestKit\Utils\KeyValueObject;
 use PhpDevCommunity\UniTester\TestCase;
 
 class SchemaTest extends TestCase
@@ -397,5 +398,56 @@ class SchemaTest extends TestCase
         $this->assertStrictEquals('admin', $result->get('roles.0'));
         $this->assertStrictEquals('value1', $result->get('dependencies.key1'));
         $this->assertStrictEquals('value2', $result->get('dependencies.key2'));
+
+
+        $schema = Schema::create([
+            'roles' => Type::arrayOf(Type::string()->strict())->required()->example('admin')->acceptCommaSeparatedValues(),
+        ]);
+
+        $data = [
+            'roles' => 'admin,user,manager',
+        ];
+        $result = $schema->process($data);
+        $this->assertStrictEquals('admin', $result->get('roles.0'));
+        $this->assertStrictEquals('user', $result->get('roles.1'));
+        $this->assertStrictEquals('manager', $result->get('roles.2'));
+
+
+        $schema = Schema::create([
+            'autoload.psr-4' => Type::map(Type::string()->strict()->trim())->required(),
+            'dependencies' => Type::map(Type::string()->strict()->trim())
+        ]);
+
+        $data = [
+            'autoload.psr-4' => [
+                'App\\' => 'app/',
+            ],
+            'dependencies' => [
+                'key1' => 'value1',
+                'key2' => 'value2',
+            ],
+        ];
+        $result = $schema->process($data);
+        $this->assertInstanceOf( KeyValueObject::class, $result->get('autoload.psr-4'));
+        $this->assertInstanceOf( KeyValueObject::class, $result->get('dependencies'));
+        $this->assertEquals(1, count($result->get('autoload.psr-4')));
+        $this->assertEquals(2, count($result->get('dependencies')));
+
+
+        $schema = Schema::create([
+            'autoload.psr-4' => Type::map(Type::string()->strict()->trim()),
+            'dependencies' => Type::map(Type::string()->strict()->trim())
+        ]);
+
+        $data = [
+            'autoload.psr-4' => [
+            ],
+        ];
+        $result = $schema->process($data);
+        $this->assertInstanceOf( KeyValueObject::class, $result->get('autoload.psr-4'));
+        $this->assertInstanceOf( KeyValueObject::class, $result->get('dependencies'));
+        $this->assertEquals(0, count($result->get('autoload.psr-4')));
+        $this->assertEquals(0, count($result->get('dependencies')));
+
     }
 }

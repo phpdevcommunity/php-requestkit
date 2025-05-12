@@ -5,6 +5,8 @@ namespace PhpDevCommunity\RequestKit\Hydrator;
 use LogicException;
 use PhpDevCommunity\RequestKit\Type\ArrayOfType;
 use PhpDevCommunity\RequestKit\Type\ItemType;
+use PhpDevCommunity\RequestKit\Type\MapType;
+use PhpDevCommunity\RequestKit\Utils\KeyValueObject;
 use ReflectionClass;
 
 final class ObjectHydrator
@@ -52,7 +54,9 @@ final class ObjectHydrator
                     $value = $elements;
                 }
             }
-
+            if ($value instanceof KeyValueObject) {
+                $value = $value->getArrayCopy();
+            }
             if (in_array( $propertyName, $propertiesPublic)) {
                 $object->$propertyName = $value;
             }elseif (method_exists($object, 'set' . $propertyName)) {

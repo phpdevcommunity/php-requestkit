@@ -94,6 +94,7 @@ class UserController
                 'email' => Type::email()->required(),
                 'age' => Type::int()->min(18),
                 'roles' => Type::arrayOf(Type::string())->required(),
+                'metadata' => Type::map(Type::string())->required(),
                 'address' => Type::item([
                     'street' => Type::string()->length(5, 100),
                     'city' => Type::string()->allowed('Paris', 'London'),
@@ -108,6 +109,7 @@ class UserController
             $email = $validatedData->get('user.email');
             $age = $validatedData->get('user.age');
             $roles = $validatedData->get('user.roles');
+            $metadata = $validatedData->get('user.metadata'); // <-- map : Instance Of KeyValueObject
             $street = $validatedData->get('user.address.street');
             $city = $validatedData->get('user.address.city');
 
@@ -130,6 +132,10 @@ $requestData = [
         'email' => 'john.doe@example.com',
         'age' => 30,
         'roles' => ['admin', 'user'],
+        'metadata' => [
+            'department' => 'IT',
+            'level' => 'senior',
+        ],
         'address' => [
             'street' => 'Main Street',
             'city' => 'London',
@@ -360,7 +366,7 @@ Use `toResponse()` to get a pre-formatted associative array suitable for returni
 *   **`Type::item(array $schema)`:** For nested objects/items. Defines a schema for a nested object within the main schema.
 
 *   **`Type::arrayOf(Type $type)`:** For collections/arrays.  Defines that a field should be an array of items, each validated against the provided `Type`.
-
+*   **`Type::map(Type $type)`:** For key-value objects (associative arrays). Defines that a field should be an object where each value is validated against the provided Type, and keys must be strings.
 ## Extending Schemas
 
 You can extend existing schemas to reuse and build upon validation logic.

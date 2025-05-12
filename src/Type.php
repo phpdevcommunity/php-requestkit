@@ -11,6 +11,7 @@ use PhpDevCommunity\RequestKit\Type\EmailType;
 use PhpDevCommunity\RequestKit\Type\FloatType;
 use PhpDevCommunity\RequestKit\Type\IntType;
 use PhpDevCommunity\RequestKit\Type\ItemType;
+use PhpDevCommunity\RequestKit\Type\MapType;
 use PhpDevCommunity\RequestKit\Type\NumericType;
 use PhpDevCommunity\RequestKit\Type\StringType;
 use PhpDevCommunity\RequestKit\Utils\DateOnly;
@@ -65,6 +66,11 @@ final class Type
     public static function arrayOf(AbstractType $type) : ArrayOfType
     {
         return new ArrayOfType($type);
+    }
+
+    public static function map(AbstractType $type) : MapType
+    {
+        return new MapType($type);
     }
 
     public static function typeObject(string $type): ?AbstractType

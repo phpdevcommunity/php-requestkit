@@ -38,8 +38,13 @@ final class ItemType extends AbstractType
 
     protected function validateValue(ValidationResult $result): void
     {
+        $value = $result->getValue();
+        if (!is_array($value)) {
+            $result->setError("Value must be an array, got: " . gettype($result->getValue()));
+            return;
+        }
         try {
-            $result->setValue($this->schema->process($result->getValue()));
+            $result->setValue($this->schema->process($value));
         } catch (InvalidDataException $e) {
             $result->setErrors($e->getErrors(), false);
         }

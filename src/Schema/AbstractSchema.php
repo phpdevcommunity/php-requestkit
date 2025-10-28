@@ -96,7 +96,7 @@ abstract class AbstractSchema
      */
     abstract protected function definitions(): array;
 
-    final private function getDefinitions(): array
+    private function getDefinitions(): array
     {
         $definitions = $this->definitions();
         foreach ($definitions as $definition) {

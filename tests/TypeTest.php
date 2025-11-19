@@ -3,6 +3,7 @@ namespace Test\PhpDevCommunity\RequestKit;
 use PhpDevCommunity\RequestKit\Type\BoolType;
 use PhpDevCommunity\RequestKit\Type\DateTimeType;
 use PhpDevCommunity\RequestKit\Type\DateType;
+use PhpDevCommunity\RequestKit\Type\FloatType;
 use PhpDevCommunity\RequestKit\Type\IntType;
 use PhpDevCommunity\RequestKit\Type\NumericType;
 use PhpDevCommunity\RequestKit\Type\StringType;
@@ -133,6 +134,7 @@ class TypeTest extends \PhpDevCommunity\UniTester\TestCase
         $this->assertFalse($result->isValid());
         $this->assertNotNull($result->getError());
 
+
         $type->strict();
         $result = $type->validate("10");
         $this->assertFalse($result->isValid());
@@ -146,6 +148,48 @@ class TypeTest extends \PhpDevCommunity\UniTester\TestCase
         $result = $type->validate(null);
         $this->assertTrue($result->isValid());
         $this->assertNull($result->getError());
+
+        $intWithTransform = (new IntType())
+            ->required()
+            ->transform(function ($value) {
+                {
+                    if (!is_string($value)) {
+                        return $value;
+                    }
+
+                    if (preg_match('/-?\d+(\.\d+)?/', $value, $match)) {
+                        return $match[0];
+                    }
+                    return $value;
+                }
+            })
+            ->min(1)
+            ->max(12);
+
+        $result = $intWithTransform->validate("5 UNION ALL");
+        $this->assertTrue($result->isValid());
+        $this->assertEquals(5,$result->getValue());
+
+
+        $floatWithTransform = (new FloatType())
+            ->required()
+            ->transform(function ($value) {
+                {
+                    if (!is_string($value)) {
+                        return $value;
+                    }
+
+                    if (preg_match('/-?\d+(\.\d+)?/', $value, $match)) {
+                        return $match[0];
+                    }
+                    return $value;
+                }
+            })
+            ->min(1)
+            ->max(12);
+        $result = $floatWithTransform->validate("3.04 OR 1=1");
+        $this->assertTrue($result->isValid());
+        $this->assertEquals(3.04,$result->getValue());
 
     }
 

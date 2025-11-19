@@ -12,6 +12,7 @@ final class FloatType extends AbstractType
     private ?float $min = null;
     private ?float $max = null;
 
+
     public function min(float $min): self
     {
         $this->min = $min;

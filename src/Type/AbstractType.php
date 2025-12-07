@@ -1,9 +1,10 @@
 <?php
 
-namespace PhpDevCommunity\RequestKit\Type;
+namespace Depo\RequestKit\Type;
 
 use Closure;
-use PhpDevCommunity\RequestKit\ValidationResult;
+use Depo\RequestKit\Locale;
+use Depo\RequestKit\ValidationResult;
 
 abstract class AbstractType
 {
@@ -16,7 +17,6 @@ abstract class AbstractType
      */
     protected $default = null;
     protected ?array $transformers = null;
-
 
     final public function required(): self
     {
@@ -114,14 +114,13 @@ abstract class AbstractType
 
         if ($result->getValue() === null || (is_string($result->getValue())) && trim($result->getValue()) === '') {
             if ($this->isRequired()) {
-                $result->setError("Value is required, but got null or empty string");
+                $result->setError(Locale::get('error.required'));
             }
             return $result;
         }
 
         $this->transformValue($result);
         $this->validateValue($result);
-
         return $result;
     }
 

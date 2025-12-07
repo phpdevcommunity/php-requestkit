@@ -1,20 +1,20 @@
 <?php
 
-namespace PhpDevCommunity\RequestKit;
-use PhpDevCommunity\RequestKit\Schema\Schema;
-use PhpDevCommunity\RequestKit\Type\AbstractType;
-use PhpDevCommunity\RequestKit\Type\ArrayOfType;
-use PhpDevCommunity\RequestKit\Type\BoolType;
-use PhpDevCommunity\RequestKit\Type\DateTimeType;
-use PhpDevCommunity\RequestKit\Type\DateType;
-use PhpDevCommunity\RequestKit\Type\EmailType;
-use PhpDevCommunity\RequestKit\Type\FloatType;
-use PhpDevCommunity\RequestKit\Type\IntType;
-use PhpDevCommunity\RequestKit\Type\ItemType;
-use PhpDevCommunity\RequestKit\Type\MapType;
-use PhpDevCommunity\RequestKit\Type\NumericType;
-use PhpDevCommunity\RequestKit\Type\StringType;
-use PhpDevCommunity\RequestKit\Utils\DateOnly;
+namespace Depo\RequestKit;
+use Depo\RequestKit\Schema\Schema;
+use Depo\RequestKit\Type\AbstractType;
+use Depo\RequestKit\Type\ArrayOfType;
+use Depo\RequestKit\Type\BoolType;
+use Depo\RequestKit\Type\DateTimeType;
+use Depo\RequestKit\Type\DateType;
+use Depo\RequestKit\Type\EmailType;
+use Depo\RequestKit\Type\FloatType;
+use Depo\RequestKit\Type\IntType;
+use Depo\RequestKit\Type\ItemType;
+use Depo\RequestKit\Type\MapType;
+use Depo\RequestKit\Type\NumericType;
+use Depo\RequestKit\Type\StringType;
+use Depo\RequestKit\Utils\DateOnly;
 
 final class Type
 {
@@ -75,7 +75,7 @@ final class Type
 
     public static function typeObject(string $type): ?AbstractType
     {
-        if ($type=== DateOnly::class) {
+        if ($type === DateOnly::class) {
             return self::date();
         }
 

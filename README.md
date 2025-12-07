@@ -8,6 +8,9 @@ Simplify your request processing with `php-requestkit`. This library allows you 
 
 * **Schema-based validation:** Define clear and concise validation rules for your request data.
 * **Data transformation:**  Automatically transform and sanitize input data based on your schema.
+* **HTTP Header Validation:** Define rules to validate incoming request headers.
+* **Form & CSRF Processing:** Securely process form submissions with built-in CSRF token validation.
+* **Internationalization (i18n):** Error messages can be easily translated. Comes with English and French built-in.
 * **Multiple data types:** Supports strings, integers, booleans, dates, date-times, and numeric types with various constraints.
 * **Nested data and collections:** Validate complex data structures, including nested objects and arrays.
 * **Error handling:** Provides detailed error messages for easy debugging and user feedback.
@@ -16,7 +19,7 @@ Simplify your request processing with `php-requestkit`. This library allows you 
 ## Installation
 
 ```bash
-composer require phpdevcommunity/php-requestkit
+composer require depo/requestkit
 ```
 
 ## Basic Usage
@@ -26,8 +29,8 @@ composer require phpdevcommunity/php-requestkit
 ```php
 <?php
 
-use PhpDevCommunity\RequestKit\Schema\Schema;
-use PhpDevCommunity\RequestKit\Type;
+use Depo\RequestKit\Schema\Schema;
+use Depo\RequestKit\Type;
 
 $userSchema = Schema::create([
     'username' => Type::string()->length(5, 20)->required(),
@@ -41,7 +44,7 @@ $userSchema = Schema::create([
 ```php
 <?php
 
-use PhpDevCommunity\RequestKit\Exceptions\InvalidDataException;
+use Depo\RequestKit\Exceptions\InvalidDataException;
 
 // ... (Schema creation from step 1) ...
 
@@ -80,9 +83,9 @@ This example demonstrates validating data from a REST API endpoint (e.g., POST, 
 
 namespace MonApi\Controller;
 
-use PhpDevCommunity\RequestKit\Schema\Schema;
-use PhpDevCommunity\RequestKit\Type;
-use PhpDevCommunity\RequestKit\Exceptions\InvalidDataException;
+use Depo\RequestKit\Schema\Schema;
+use Depo\RequestKit\Type;
+use Depo\RequestKit\Exceptions\InvalidDataException;
 
 class UserController
 {
@@ -156,9 +159,9 @@ Validate parameters passed in the URL's query string.
 
 namespace MonApi\Controller;
 
-use PhpDevCommunity\RequestKit\Schema\Schema;
-use PhpDevCommunity\RequestKit\Type;
-use PhpDevCommunity\RequestKit\Exceptions\InvalidDataException;
+use Depo\RequestKit\Schema\Schema;
+use Depo\RequestKit\Type;
+use Depo\RequestKit\Exceptions\InvalidDataException;
 
 class ProductController
 {
@@ -203,9 +206,9 @@ Validate arrays of data, especially useful for batch operations or list endpoint
 
 namespace MonApi\Controller;
 
-use PhpDevCommunity\RequestKit\Schema\Schema;
-use PhpDevCommunity\RequestKit\Type;
-use PhpDevCommunity\RequestKit\Exceptions\InvalidDataException;
+use Depo\RequestKit\Schema\Schema;
+use Depo\RequestKit\Type;
+use Depo\RequestKit\Exceptions\InvalidDataException;
 
 class OrderController
 {
@@ -249,9 +252,101 @@ $result = $controller->createOrders($ordersData);
 print_r($result); // Will print error array if validation fails
 ```
 
+## Advanced Usage: HTTP Requests, Headers, and Forms
+
+While `process()` is great for arrays, the library shines when working with PSR-7 `ServerRequestInterface` objects, allowing you to validate headers, form data, and CSRF tokens seamlessly.
+
+### Validating Request Headers with `withHeaders()`
+
+You can enforce rules on incoming HTTP headers by chaining the `withHeaders()` method to your schema. This is perfect for validating API keys, content types, or custom headers.
+
+```php
+<?php
+use Depo\RequestKit\Schema\Schema;
+use Depo\RequestKit\Type;
+use Psr\Http\Message\ServerRequestInterface;
+
+// Assume $request is a PSR-7 ServerRequestInterface object from your framework
+
+$schema = Schema::create([
+    'name' => Type::string()->required(),
+])->withHeaders([
+    'Content-Type' => Type::string()->equals('application/json'),
+    'X-Api-Key' => Type::string()->required()->length(16),
+]);
+
+try {
+    // processHttpRequest validates both headers and the request body
+    $validatedData = $schema->processHttpRequest($request);
+    $name = $validatedData->get('name');
+    
+} catch (InvalidDataException $e) {
+    // Throws an exception if headers or body are invalid
+    // e.g., if 'X-Api-Key' is missing or 'Content-Type' is not 'application/json'
+    http_response_code(400);
+    return ['errors' => $e->getErrors()];
+}
+```
+
+### Processing Forms with CSRF Protection using `processForm()`
+
+Securely handle form submissions (`application/x-www-form-urlencoded`) with optional CSRF token validation.
+
+**1. Form with CSRF Validation (Recommended)**
+
+Pass the expected CSRF token (e.g., from the user's session) as the second argument. The library will ensure the token is present and matches.
+
+```php
+<?php
+use Depo\RequestKit\Schema\Schema;
+use Depo\RequestKit\Type;
+use Psr\Http\Message\ServerRequestInterface;
+
+// Assume $request is a PSR-7 ServerRequestInterface object
+// and $_SESSION['csrf_token'] holds the expected token.
+
+$schema = Schema::create([
+    'username' => Type::string()->required(),
+    'comment' => Type::string()->required(),
+]);
+
+$expectedToken = $_SESSION['csrf_token'] ?? null;
+
+try {
+    // processForm validates the form body and the CSRF token
+    // The third argument '_csrf' is the name of the form field containing the token.
+    $validatedData = $schema->processFormHttpRequest($request, $expectedToken, '_csrf');
+    // The '_csrf' field is automatically removed from the validated data.
+    
+} catch (InvalidDataException $e) {
+    // Throws an exception if form data is invalid or CSRF token is missing/incorrect
+    http_response_code(400);
+    if ($e->getMessage() === 'Invalid CSRF token.') {
+        http_response_code(403); // Forbidden
+    }
+    return ['errors' => $e->getErrors()];
+}
+```
+
+**2. Form without CSRF Validation**
+
+If you don't need CSRF protection for a specific form (e.g., a public search form), simply omit the second argument (or pass `null`).
+
+```php
+<?php
+// ...
+try {
+    // No CSRF token is expected or validated
+    $validatedData = $schema->processFormHttpRequest($request);
+    
+} catch (InvalidDataException $e) {
+    // ...
+}
+```
+
 ## Error Handling with `InvalidDataException`
 
-When validation fails, the `Schema::process()` method throws an `InvalidDataException`.  This exception provides methods to access detailed error information.
+When validation fails, an `InvalidDataException` is thrown. This exception provides methods to access detailed error information.
 
 ### Retrieving All Errors
 
@@ -289,54 +384,16 @@ Use `getError(string $key)` to get the error message for a specific field path. 
     }
 ```
 
-### Formatting Error Response with `toResponse()`
-
-Use `toResponse()` to get a pre-formatted associative array suitable for returning as an API error response. This includes status, a general error message, and detailed validation errors.
-
-```php
-<?php
-// ... inside a catch block for InvalidDataException ...
-
-    } catch (InvalidDataException $e) {
-        $response = $e->toResponse();
-        // $response will be like:
-        // [
-        //     'status' => 'error',
-        //     'message' => 'Validation failed',
-        //     'errors' => [ /* ... detailed errors from getErrors() ... */ ],
-        // ]
-        http_response_code($response['code']); // Set appropriate HTTP status code (e.g., 400)
-        return $response;
-    }
-```
-
-### Accessing Exception `message` and `code`
-
-`InvalidDataException` extends PHP's base `\Exception`, allowing access to standard exception properties.
-
-```php
-<?php
-// ... inside a catch block for InvalidDataException ...
-
-    } catch (InvalidDataException $e) {
-        $message = $e->getMessage(); // General error message (e.g., "Validation failed")
-        $code = $e->getCode();       //  Error code (you can customize this)
-
-        return [
-            'message' => $message,
-            'code' => $code,
-            'errors' => $e->getErrors(), // Detailed errors
-        ];
-    }
-```
-
 ## Available Validation Types and Rules
 
 `php-requestkit` provides a variety of built-in data types with a rich set of validation rules.
 
-*   **`Type::string()`:**
+*   **General Rules (Available for most types):**
     *   `required()`: Field is mandatory.
     *   `optional()`: Field is optional.
+    *   `strict()`: Strict type validation (e.g., `Type::int()->strict()` will not accept `"123"`).
+
+*   **`Type::string()`:**
     *   `length(min, max)`:  String length constraints.
     *   `trim()`: Trim whitespace from both ends.
     *   `lowercase()`: Convert to lowercase.
@@ -346,35 +403,100 @@ Use `toResponse()` to get a pre-formatted associative array suitable for returni
     *   `removeSpaces()`: Remove all spaces.
     *   `padLeft(length, char)`: Pad string to the left with a character.
     *   `removeChars(...chars)`: Remove specific characters.
-    *   `strict()`: Strict type validation (only accepts strings).
+    *   `equals(value)`: The final value must be strictly equal to the given `value`.
 
-*   **`Type::int()`:**
-    *   `required()`, `optional()`, `strict()`: Same as StringType.
+*   **`Type::int()` & `Type::float()`:**
     *   `min(value)`: Minimum value.
     *   `max(value)`: Maximum value.
+    *   `equals(value)`: The final value must be strictly equal to the given `value`.
+
 
 *   **`Type::bool()`:**
-    *   `required()`, `optional()`, `strict()`: Same as StringType.
+    *   Accepts `true`, `false`, `'true'`, `'false'`, `1`, `0`, `'1'`, `'0'`.
+    *   `equals(value)`: The final value must be strictly equal to the given `value`.
 
 *   **`Type::date()` and `Type::datetime()`:**
-    *   `required()`, `optional()`: Same as StringType.
     *   `format(format)`: Specify the date/datetime format (using PHP date formats).
 
 *   **`Type::numeric()`:**
-    *   `required()`, `optional()`: Same as StringType.  Validates any numeric value (integer or float).
+    *   Validates any numeric value (integer or float).
+    *   `equals(value)`: The final value must be strictly equal to the given `value`.
 
 *   **`Type::item(array $schema)`:** For nested objects/items. Defines a schema for a nested object within the main schema.
 
 *   **`Type::arrayOf(Type $type)`:** For collections/arrays.  Defines that a field should be an array of items, each validated against the provided `Type`.
 *   **`Type::map(Type $type)`:** For key-value objects (associative arrays). Defines that a field should be an object where each value is validated against the provided Type, and keys must be strings.
+
+## Internationalization (i18n)
+
+All error messages are translatable. The library includes English (`en`) and French (`fr`) by default.
+
+### Changing the Language
+
+To switch the language for all subsequent error messages, use the static method `Locale::setLocale()` at the beginning of your application.
+
+```php
+use Depo\RequestKit\Locale;
+
+// Set the active language to French
+Locale::setLocale('fr');
+```
+
+### Adding a New Language
+
+You can easily add support for a new language using `Locale::addMessages()`. Provide the two-letter language code and an associative array of translations. If a key is missing for the active language, the library will automatically fall back to the English version.
+
+Here is a full template for creating a new translation. You only need to translate the values.
+
+```php
+use Depo\RequestKit\Locale;
+
+Locale::addMessages('en', [ // Example for English
+    'error' => [
+        'required' => 'Value is required, but got null or empty string.',
+        'equals' => 'The value does not match the expected value.',
+        'csrf' => 'Invalid CSRF token.',
+        'json' => 'Invalid JSON input: {error}',
+        'type' => [
+            'string' => 'Value must be a string, got: {type}.',
+            'int' => 'Value must be an integer, got: {type}.',
+            'float' => 'Value must be a float, got: {type}.',
+            'bool' => 'Value must be a boolean, got: {type}.',
+            'numeric' => 'Value must be numeric, got: {type}.',
+            'date' => 'Value must be a valid date.',
+            'datetime' => 'Value must be a valid datetime.',
+            'array' => 'Value must be an array.',
+        ],
+        'string' => [
+            'min_length' => 'Value must be at least {min} characters long.',
+            'max_length' => 'Value cannot be longer than {max} characters.',
+            'email' => 'Value must be a valid email address.',
+            'allowed' => 'Value is not allowed.',
+        ],
+        'int' => [
+            'min' => 'Value must be at least {min}.',
+            'max' => 'Value must be no more than {max}.',
+        ],
+        'array' => [
+            'min_items' => 'Value must have at least {min} item(s).',
+            'max_items' => 'Value must have at most {max} item(s).',
+            'integer_keys' => 'All keys must be integers.',
+        ],
+        'map' => [
+            'string_key' => 'Key "{key}" must be a string, got {type}.',
+        ]
+    ],
+]);
+```
+
 ## Extending Schemas
 
 You can extend existing schemas to reuse and build upon validation logic.
 
 ```php
 <?php
-use PhpDevCommunity\RequestKit\Schema\Schema;
-use PhpDevCommunity\RequestKit\Type;
+use Depo\RequestKit\Schema\Schema;
+use Depo\RequestKit\Type;
 
 $baseUserSchema = Schema::create([
     'name' => Type::string()->required(),

@@ -1,9 +1,9 @@
 <?php
 
-namespace PhpDevCommunity\RequestKit\Generator;
+namespace Depo\RequestKit\Generator;
 
-use PhpDevCommunity\RequestKit\Builder\SchemaObjectFactory;
-use PhpDevCommunity\RequestKit\Type;
+use Depo\RequestKit\Builder\SchemaObjectFactory;
+use Depo\RequestKit\Type;
 use ReflectionClass;
 use ReflectionException;
 use ReflectionProperty;

@@ -1,11 +1,11 @@
 <?php
 
-namespace PhpDevCommunity\RequestKit\Schema;
+namespace Depo\RequestKit\Schema;
 
 use InvalidArgumentException;
-use PhpDevCommunity\RequestKit\Exceptions\InvalidDataException;
-use PhpDevCommunity\RequestKit\Hydrator\ObjectHydrator;
-use PhpDevCommunity\RequestKit\Type\ItemType;
+use Depo\RequestKit\Exceptions\InvalidDataException;
+use Depo\RequestKit\Hydrator\ObjectHydrator;
+use Depo\RequestKit\Type\ItemType;
 
 final class SchemaAccessor
 {

@@ -1,11 +1,12 @@
 <?php
 
-namespace PhpDevCommunity\RequestKit\Type;
+namespace Depo\RequestKit\Type;
 
-use PhpDevCommunity\RequestKit\Exceptions\InvalidDataException;
-use PhpDevCommunity\RequestKit\Schema\Schema;
-use PhpDevCommunity\RequestKit\Utils\KeyValueObject;
-use PhpDevCommunity\RequestKit\ValidationResult;
+use Depo\RequestKit\Exceptions\InvalidDataException;
+use Depo\RequestKit\Locale;
+use Depo\RequestKit\Schema\Schema;
+use Depo\RequestKit\Utils\KeyValueObject;
+use Depo\RequestKit\ValidationResult;
 
 final class MapType extends AbstractType
 {
@@ -51,24 +52,24 @@ final class MapType extends AbstractType
         }
         $values = $result->getValue();
         if (!is_array($values) && !$values instanceof KeyValueObject) {
-            $result->setError('Value must be an array or KeyValueObject');
+            $result->setError(Locale::get('error.type.array'));
             return;
         }
 
         $count = count($values);
-        if ($this->min && $count < $this->min) {
-            $result->setError("Value must have at least $this->min item(s)");
+        if ($this->min !== null && $count < $this->min) {
+            $result->setError(Locale::get('error.array.min_items', ['min' => $this->min]));
             return;
         }
-        if ($this->max && $count > $this->max) {
-            $result->setError("Value must have at most $this->max item(s)");
+        if ($this->max !== null && $count > $this->max) {
+            $result->setError(Locale::get('error.array.max_items', ['max' => $this->max]));
             return;
         }
 
         $definitions = [];
         foreach ($values as $key => $value) {
             if (!is_string($key)) {
-                $result->setError(sprintf( 'Key "%s" must be a string, got %s', $key, gettype($key)));
+                $result->setError(Locale::get('error.map.string_key', ['key' => $key, 'type' => gettype($key)]));
                 return;
             }
             $key = trim($key);

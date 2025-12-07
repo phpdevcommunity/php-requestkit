@@ -1,14 +1,16 @@
 <?php
 
-namespace PhpDevCommunity\RequestKit\Type;
+namespace Depo\RequestKit\Type;
 
-use PhpDevCommunity\RequestKit\Type\Traits\StrictTrait;
-use PhpDevCommunity\RequestKit\ValidationResult;
-use PhpDevCommunity\Validator\Assert\Integer;
+use Depo\RequestKit\Locale;
+use Depo\RequestKit\Type\Traits\EqualTrait;
+use Depo\RequestKit\Type\Traits\StrictTrait;
+use Depo\RequestKit\ValidationResult;
 
 final class IntType extends AbstractType
 {
     use StrictTrait;
+    use EqualTrait;
 
     private ?int $min = null;
     private ?int $max = null;
@@ -28,24 +30,32 @@ final class IntType extends AbstractType
     protected function validateValue(ValidationResult $result): void
     {
         if ($this->isStrict() && !is_int($result->getValue())) {
-            $result->setError("Value must be a int, got: " . gettype($result->getValue()));
+            $result->setError(Locale::get('error.type.int', ['type' => gettype($result->getValue())]));
             return;
         }
 
-        if ($this->isStrict() === false && is_numeric($result->getValue())) {
-            $value = intval($result->getValue());
-            $result->setValue($value);
+        if (!$this->isStrict() && !is_numeric($result->getValue())) {
+            $result->setError(Locale::get('error.type.int', ['type' => gettype($result->getValue())]));
+            return;
+        }
+        
+        if (!$this->isStrict()) {
+            $result->setValue(intval($result->getValue()));
         }
 
-        $validator = new Integer();
-        if ($this->min) {
-            $validator->min($this->min);
+        if ($this->checkEquals && $result->getValue() !== $this->equalTo) {
+            $result->setError(Locale::get('error.equals'));
+            return;
         }
-        if ($this->max) {
-            $validator->max($this->max);
+
+        if ($this->min !== null && $result->getValue() < $this->min) {
+            $result->setError(Locale::get('error.int.min', ['min' => $this->min]));
+            return;
         }
-        if ($validator->validate($result->getValue()) === false) {
-            $result->setError($validator->getError());
+
+        if ($this->max !== null && $result->getValue() > $this->max) {
+            $result->setError(Locale::get('error.int.max', ['max' => $this->max]));
+            return;
         }
     }
 }

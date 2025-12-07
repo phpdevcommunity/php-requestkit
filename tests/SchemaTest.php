@@ -1,13 +1,16 @@
 <?php
 
-namespace Test\PhpDevCommunity\RequestKit;
+namespace Test\Depo\RequestKit;
 
 use DateTime;
-use PhpDevCommunity\RequestKit\Exceptions\InvalidDataException;
-use PhpDevCommunity\RequestKit\Schema\Schema;
-use PhpDevCommunity\RequestKit\Type;
-use PhpDevCommunity\RequestKit\Utils\KeyValueObject;
-use PhpDevCommunity\UniTester\TestCase;
+use Depo\RequestKit\Exceptions\InvalidDataException;
+use Depo\RequestKit\Schema\Schema;
+use Depo\RequestKit\Type;
+use Depo\RequestKit\Utils\KeyValueObject;
+use Depo\UniTester\TestCase;
+use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Message\StreamInterface;
+use Psr\Http\Message\UriInterface;
 
 class SchemaTest extends TestCase
 {
@@ -45,8 +48,116 @@ class SchemaTest extends TestCase
         $this->testArray();
         $this->testExtend();
         $this->testExampleData();
-
+        $this->testWithHeaders();
+        $this->testProcessForm();
     }
+
+    public function testWithHeaders()
+    {
+        $schema = Schema::create([
+            'name' => Type::string()->required(),
+        ])->withHeaders([
+            'Content-Type' => Type::string()->equals('application/json'),
+            'X-Api-Key' => Type::string()->required()->length(10),
+        ]);
+
+        // Test case 1: Valid headers - should not throw an exception
+        $request = $this->createServerRequest(
+            ['Content-Type' => 'application/json', 'X-Api-Key' => '1234567890'],
+            ['name' => 'test']
+        );
+        $result = $schema->processHttpRequest($request);
+        $this->assertEquals('test', $result->get('name')); // Assert data is processed
+
+        // Test case 2: Missing required header
+        $request = $this->createServerRequest(
+            ['Content-Type' => 'application/json'],
+            ['name' => 'test']
+        );
+        $this->expectException(InvalidDataException::class, function () use ($schema, $request) {
+            try {
+                $schema->processHttpRequest($request);
+            } catch (InvalidDataException $e) {
+                $this->assertNotEmpty($e->getError('x-api-key'));
+                throw $e;
+            }
+        });
+
+        // Test case 3: Header constraint violation
+        $request = $this->createServerRequest(
+            ['Content-Type' => 'application/xml', 'X-Api-Key' => '1234567890'],
+            ['name' => 'test']
+        );
+        $this->expectException(InvalidDataException::class, function () use ($schema, $request) {
+            try {
+                $schema->processHttpRequest($request);
+            } catch (InvalidDataException $e) {
+                $this->assertNotEmpty($e->getError('content-type'));
+                throw $e;
+            }
+        });
+    }
+
+    public function testProcessForm()
+    {
+        $schema = Schema::create([
+            'username' => Type::string()->required(),
+        ]);
+        $csrfToken = 'a_very_secret_token_123';
+
+        // Test case 1: Valid form with correct CSRF token - should not throw an exception
+        $request = $this->createServerRequest(
+            [
+                'Content-Type' => 'application/x-www-form-urlencoded',
+            ],
+            ['username' => 'john.doe', '_csrf' => $csrfToken]
+        );
+        $result = $schema->processFormHttpRequest($request, $csrfToken);
+        $this->assertEquals('john.doe', $result->get('username'));
+
+        // Test case 2: Valid form without CSRF check (optional) - should not throw an exception
+        $request = $this->createServerRequest(
+            [
+                'Content-Type' => 'application/x-www-form-urlencoded',
+            ],
+            ['username' => 'jane.doe']
+        );
+        $result = $schema->processFormHttpRequest($request, null); // Pass null to skip CSRF
+        $this->assertEquals('jane.doe', $result->get('username'));
+
+        // Test case 3: Form with incorrect CSRF token
+        $request = $this->createServerRequest(
+            [
+                'Content-Type' => 'application/x-www-form-urlencoded',
+            ],
+            ['username' => 'hacker', '_csrf' => 'wrong_token'],
+        );
+        $this->expectException(InvalidDataException::class, function () use ($schema, $request, $csrfToken) {
+            try {
+                $schema->processFormHttpRequest($request, $csrfToken);
+            } catch (InvalidDataException $e) {
+                $this->assertEquals('Invalid CSRF token.', $e->getMessage());
+                throw $e;
+            }
+        });
+
+        // Test case 4: Form with missing CSRF token
+        $request = $this->createServerRequest(
+            [
+                'Content-Type' => 'application/x-www-form-urlencoded',
+            ],
+            ['username' => 'hacker'],
+        );
+        $this->expectException(InvalidDataException::class, function () use ($schema, $request, $csrfToken) {
+            try {
+                $schema->processFormHttpRequest($request, $csrfToken);
+            } catch (InvalidDataException $e) {
+                $this->assertEquals('Invalid CSRF token.', $e->getMessage());
+                throw $e;
+            }
+        });
+    }
+
 
     public function testValidData(): void
     {
@@ -337,7 +448,7 @@ class SchemaTest extends TestCase
         $schema1 = Schema::create([
             'name' => Type::string()->length(20, 50)->required()->example('John Doe'),
             'age' => Type::int()->strict()->alias('my_age')->example(20),
-            'roles' => Type::arrayOf(Type::string()->strict())->required()->example('admin'),
+            'roles' => Type::arrayOf(Type::string()->strict())->required()->example(['admin']),
             'address' => Type::item([
                 'street' => Type::string()->length(15, 100),
                 'city' => Type::string()->allowed('Paris', 'London'),
@@ -361,7 +472,11 @@ class SchemaTest extends TestCase
         $schema2 = Schema::create([
             'name' => Type::string()->length(20, 50)->required()->example('John Doe'),
             'age' => Type::int()->strict()->alias('my_age')->example(20),
-            'roles' => Type::arrayOf(Type::string()->strict())->required()->example('admin'),
+            'roles' => Type::arrayOf(Type::string()->strict())->required()->example(['admin']),
+            'keysValues' => Type::arrayOf(Type::string()->strict())
+                ->required()
+                ->acceptStringKeys()
+                ->example(['key' => 'value']),
             'address' => Type::item([
                 'street' => Type::string()->length(15, 100)->example('Main Street'),
                 'city' => Type::string()->allowed('Paris', 'London')->example('London'),
@@ -372,6 +487,7 @@ class SchemaTest extends TestCase
             'name' => 'John Doe',
             'age' => 20,
             'roles' => ['admin'],
+            'keysValues' => ['key' => 'value'],
             'address' => [
                 'street' => 'Main Street',
                 'city' => 'London',
@@ -383,7 +499,7 @@ class SchemaTest extends TestCase
     {
 
         $schema = Schema::create([
-            'roles' => Type::arrayOf(Type::string()->strict())->required()->example('admin'),
+            'roles' => Type::arrayOf(Type::string()->strict())->required()->example(['admin']),
             'dependencies' => Type::arrayOf(Type::string()->strict())->acceptStringKeys()
         ]);
 
@@ -449,5 +565,89 @@ class SchemaTest extends TestCase
         $this->assertEquals(0, count($result->get('autoload.psr-4')));
         $this->assertEquals(0, count($result->get('dependencies')));
 
+    }
+
+    /**
+     * Helper to create a simple ServerRequestInterface object for tests.
+     */
+    private function createServerRequest(array $headers, array $body): ServerRequestInterface
+    {
+        return new class($headers, $body) implements ServerRequestInterface {
+            private array $headers;
+            private array $body;
+
+            public function __construct(array $headers, array $body)
+            {
+                foreach ($headers as $name => $value) {
+                    $this->headers[$name][] = $value;
+                }
+                $this->body = $body;
+            }
+
+            public function getHeaders(): array { return $this->headers; }
+            public function hasHeader($name): bool { return isset($this->headers[strtolower($name)]); }
+            public function getHeader($name): array { return (array)($this->headers[strtolower($name)] ?? []); }
+            public function getHeaderLine($name): string { return implode(', ', $this->getHeader(strtolower($name))); }
+            public function getParsedBody() { return $this->body; }
+            public function getBody(): StreamInterface {
+                $stream = $this->createMock(StreamInterface::class);
+                $stream->method('getContents')->willReturn(json_encode($this->body));
+                return $stream;
+            }
+            // --- The rest of the methods are not needed for these tests ---
+            public function getProtocolVersion(): string
+            {}
+            public function withProtocolVersion($version): \Psr\Http\Message\MessageInterface
+            {}
+            public function withHeader($name, $value): \Psr\Http\Message\MessageInterface
+            {}
+            public function withAddedHeader($name, $value): \Psr\Http\Message\MessageInterface
+            {}
+            public function withoutHeader($name): \Psr\Http\Message\MessageInterface
+            {}
+            public function withBody(StreamInterface $body): \Psr\Http\Message\MessageInterface
+            {}
+            public function getRequestTarget(): string
+            {}
+            public function withRequestTarget($requestTarget): \Psr\Http\Message\RequestInterface
+            {}
+            public function getMethod(): string
+            {}
+            public function withMethod($method): \Psr\Http\Message\RequestInterface
+            {}
+            public function getUri(): UriInterface
+            {}
+            public function withUri(UriInterface $uri, $preserveHost = false): \Psr\Http\Message\RequestInterface
+            {}
+            public function getServerParams(): array
+            {}
+            public function getCookieParams(): array
+            {}
+            public function withCookieParams(array $cookies): ServerRequestInterface
+            {}
+            public function getQueryParams(): array
+            {}
+            public function withQueryParams(array $query): ServerRequestInterface
+            {}
+            public function getUploadedFiles(): array
+            {}
+            public function withUploadedFiles(array $uploadedFiles): ServerRequestInterface
+            {}
+            public function getAttribute($name, $default = null){}
+            public function withAttribute($name, $value): ServerRequestInterface
+            {}
+            public function withoutAttribute($name): ServerRequestInterface
+            {}
+
+            public function withParsedBody($data): ServerRequestInterface
+            {
+                // TODO: Implement withParsedBody() method.
+            }
+
+            public function getAttributes(): array
+            {
+                // TODO: Implement getAttributes() method.
+            }
+        };
     }
 }

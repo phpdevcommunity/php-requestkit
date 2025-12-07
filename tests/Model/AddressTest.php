@@ -1,6 +1,6 @@
 <?php
 
-namespace Test\PhpDevCommunity\RequestKit\Model;
+namespace Test\Depo\RequestKit\Model;
 
 class AddressTest
 {

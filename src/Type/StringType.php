@@ -1,14 +1,16 @@
 <?php
 
-namespace PhpDevCommunity\RequestKit\Type;
+namespace Depo\RequestKit\Type;
 
-use PhpDevCommunity\RequestKit\Type\Traits\StrictTrait;
-use PhpDevCommunity\RequestKit\ValidationResult;
-use PhpDevCommunity\Validator\Assert\StringLength;
+use Depo\RequestKit\Locale;
+use Depo\RequestKit\Type\Traits\EqualTrait;
+use Depo\RequestKit\Type\Traits\StrictTrait;
+use Depo\RequestKit\ValidationResult;
 
 final class StringType extends AbstractStringType
 {
     use StrictTrait;
+    use EqualTrait;
     private array $allowed = [];
     private ?int $min = null;
     private ?int $max = null;
@@ -29,35 +31,38 @@ final class StringType extends AbstractStringType
     protected function validateValue(ValidationResult $result): void
     {
         if ($this->isStrict() && !is_string($result->getValue())) {
-            $result->setError("Value must be a string, got: " . gettype($result->getValue()));
+            $result->setError(Locale::get('error.type.string', ['type' => gettype($result->getValue())]));
             return;
         }
 
-        if ($this->isStrict() === false && !is_string($result->getValue())) {
-
-            if (is_array($result->getValue())) {
-                $result->setError("Value must be a string, got: array");
+        if (!$this->isStrict() && !is_string($result->getValue())) {
+            if (!is_scalar($result->getValue())) {
+                $result->setError(Locale::get('error.type.string', ['type' => gettype($result->getValue())]));
                 return;
             }
-
-            $value = strval($result->getValue());
-            $result->setValue($value);
+            $result->setValue(strval($result->getValue()));
         }
 
-        if (!empty($this->allowed) && !in_array($result->getValue(), $this->allowed, $this->isStrict())) {
-            $result->setError("Value is not allowed, allowed values are: " . implode(", ", $this->allowed));
+        if ($this->checkEquals && $result->getValue() !== $this->equalTo) {
+            $result->setError(Locale::get('error.equals'));
             return;
         }
 
-        $validator = new StringLength();
-        if ($this->min) {
-            $validator->min($this->min);
+
+        if (!empty($this->allowed) && !in_array($result->getValue(), $this->allowed, true)) {
+            $result->setError(Locale::get('error.string.allowed', ['allowed' => implode(", ", $this->allowed)]));
+            return;
         }
-        if ($this->max) {
-            $validator->max($this->max);
+
+        $valueLength = function_exists('mb_strlen') ? mb_strlen($result->getValue()) : strlen($result->getValue());
+        if ($this->min !== null && $valueLength < $this->min) {
+            $result->setError(Locale::get('error.string.min_length', ['min' => $this->min]));
+            return;
         }
-        if ($validator->validate($result->getValue()) === false) {
-            $result->setError($validator->getError());
+
+        if ($this->max !== null && $valueLength > $this->max) {
+            $result->setError(Locale::get('error.string.max_length', ['max' => $this->max]));
+            return;
         }
     }
 }

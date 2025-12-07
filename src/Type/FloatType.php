@@ -1,10 +1,10 @@
 <?php
 
-namespace PhpDevCommunity\RequestKit\Type;
+namespace Depo\RequestKit\Type;
 
-use PhpDevCommunity\RequestKit\Type\Traits\StrictTrait;
-use PhpDevCommunity\RequestKit\ValidationResult;
-use PhpDevCommunity\Validator\Assert\Numeric;
+use Depo\RequestKit\Locale;
+use Depo\RequestKit\Type\Traits\StrictTrait;
+use Depo\RequestKit\ValidationResult;
 
 final class FloatType extends AbstractType
 {
@@ -28,18 +28,27 @@ final class FloatType extends AbstractType
     protected function validateValue(ValidationResult $result): void
     {
         if ($this->isStrict() && !is_float($result->getValue())) {
-            $result->setError("Value must be a float, got: " . gettype($result->getValue()));
+            $result->setError(Locale::get('error.type.float', ['type' => gettype($result->getValue())]));
             return;
         }
 
-        if ($this->isStrict() === false && is_numeric($result->getValue())) {
-            $value = floatval($result->getValue());
-            $result->setValue($value);
+        if (!$this->isStrict() && !is_numeric($result->getValue())) {
+            $result->setError(Locale::get('error.type.float', ['type' => gettype($result->getValue())]));
+            return;
         }
 
-        $validator = new Numeric();
-        if ($validator->validate($result->getValue()) === false) {
-            $result->setError($validator->getError());
+        if (!$this->isStrict()) {
+            $result->setValue(floatval($result->getValue()));
+        }
+
+        if ($this->min && $result->getValue() < $this->min) {
+            $result->setError(Locale::get('error.int.min', ['min' => $this->min]));
+            return;
+        }
+
+        if ($this->max && $result->getValue() > $this->max) {
+            $result->setError(Locale::get('error.int.max', ['max' => $this->max]));
+            return;
         }
     }
 }

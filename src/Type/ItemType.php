@@ -1,10 +1,11 @@
 <?php
 
-namespace PhpDevCommunity\RequestKit\Type;
+namespace Depo\RequestKit\Type;
 
-use PhpDevCommunity\RequestKit\Exceptions\InvalidDataException;
-use PhpDevCommunity\RequestKit\Schema\Schema;
-use PhpDevCommunity\RequestKit\ValidationResult;
+use Depo\RequestKit\Exceptions\InvalidDataException;
+use Depo\RequestKit\Locale;
+use Depo\RequestKit\Schema\Schema;
+use Depo\RequestKit\ValidationResult;
 
 final class ItemType extends AbstractType
 {
@@ -40,7 +41,7 @@ final class ItemType extends AbstractType
     {
         $value = $result->getValue();
         if (!is_array($value)) {
-            $result->setError("Value must be an array, got: " . gettype($result->getValue()));
+            $result->setError(Locale::get('error.type.array'));
             return;
         }
         try {

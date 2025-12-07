@@ -1,8 +1,8 @@
 <?php
 
-namespace Test\PhpDevCommunity\RequestKit\Model;
+namespace Test\Depo\RequestKit\Model;
 
-use PhpDevCommunity\RequestKit\Utils\DateOnly;
+use Depo\RequestKit\Utils\DateOnly;
 
 class UserModelTest
 {

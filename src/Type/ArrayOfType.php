@@ -1,10 +1,11 @@
 <?php
 
-namespace PhpDevCommunity\RequestKit\Type;
+namespace Depo\RequestKit\Type;
 
-use PhpDevCommunity\RequestKit\Exceptions\InvalidDataException;
-use PhpDevCommunity\RequestKit\Schema\Schema;
-use PhpDevCommunity\RequestKit\ValidationResult;
+use Depo\RequestKit\Exceptions\InvalidDataException;
+use Depo\RequestKit\Locale;
+use Depo\RequestKit\Schema\Schema;
+use Depo\RequestKit\ValidationResult;
 
 final class ArrayOfType extends AbstractType
 {
@@ -69,24 +70,24 @@ final class ArrayOfType extends AbstractType
             $values = array_filter($values, fn($v) => $v !== '');
         }
         if (!is_array($values)) {
-            $result->setError('Value must be an array');
+            $result->setError(Locale::get('error.type.array'));
             return;
         }
 
         $definitions = [];
         $count = count($values);
         if ($this->min && $count < $this->min) {
-            $result->setError("Value must have at least $this->min item(s)");
+            $result->setError(Locale::get('error.array.min_items', ['min' => $this->min]));
             return;
         }
         if ($this->max && $count > $this->max) {
-            $result->setError("Value must have at most $this->max item(s)");
+            $result->setError(Locale::get('error.array.max_items', ['max' => $this->max]));
             return;
         }
 
         foreach ($values as $key => $value) {
             if ($this->acceptStringKeys === false && !is_int($key)) {
-                $result->setError('All keys must be integers');
+                $result->setError(Locale::get('error.array.integer_keys'));
                 return;
             }
             if (is_string($key)) {

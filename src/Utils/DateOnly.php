@@ -1,6 +1,6 @@
 <?php
 
-namespace PhpDevCommunity\RequestKit\Utils;
+namespace Depo\RequestKit\Utils;
 
 final class DateOnly extends \DateTime
 {

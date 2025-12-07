@@ -1,9 +1,9 @@
 <?php
 
-namespace PhpDevCommunity\RequestKit\Builder;
+namespace Depo\RequestKit\Builder;
 
-use PhpDevCommunity\RequestKit\Type;
-use PhpDevCommunity\RequestKit\Type\AbstractType;
+use Depo\RequestKit\Type;
+use Depo\RequestKit\Type\AbstractType;
 
 final class TypeBuilder
 {

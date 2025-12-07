@@ -1,16 +1,16 @@
 <?php
 
-namespace Test\PhpDevCommunity\RequestKit;
+namespace Test\Depo\RequestKit;
 
 use DateTime;
-use PhpDevCommunity\RequestKit\Builder\RequestKitBuilderFactory;
-use PhpDevCommunity\RequestKit\Builder\SchemaObjectFactory;
-use PhpDevCommunity\RequestKit\Exceptions\InvalidDataException;
-use PhpDevCommunity\RequestKit\Schema\Schema;
-use PhpDevCommunity\RequestKit\Type;
-use PhpDevCommunity\UniTester\TestCase;
-use Test\PhpDevCommunity\RequestKit\Model\AddressTest;
-use Test\PhpDevCommunity\RequestKit\Model\UserModelTest;
+use Depo\RequestKit\Builder\RequestKitBuilderFactory;
+use Depo\RequestKit\Builder\SchemaObjectFactory;
+use Depo\RequestKit\Exceptions\InvalidDataException;
+use Depo\RequestKit\Schema\Schema;
+use Depo\RequestKit\Type;
+use Depo\UniTester\TestCase;
+use Test\Depo\RequestKit\Model\AddressTest;
+use Test\Depo\RequestKit\Model\UserModelTest;
 
 class HydratorTest extends TestCase
 {

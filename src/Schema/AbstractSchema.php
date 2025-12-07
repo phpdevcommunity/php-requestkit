@@ -1,19 +1,20 @@
 <?php
 
-namespace PhpDevCommunity\RequestKit\Schema;
+namespace Depo\RequestKit\Schema;
 
-use Exception;
-use PhpDevCommunity\RequestKit\Exceptions\InvalidDataException;
-use PhpDevCommunity\RequestKit\Type\AbstractType;
-use PhpDevCommunity\RequestKit\Type\ArrayOfType;
-use PhpDevCommunity\RequestKit\Type\ItemType;
+use Depo\RequestKit\Exceptions\InvalidDataException;
+use Depo\RequestKit\Locale;
+use Depo\RequestKit\Type\AbstractType;
+use Depo\RequestKit\Type\ArrayOfType;
+use Depo\RequestKit\Type\ItemType;
 use Psr\Http\Message\ServerRequestInterface;
 
 abstract class AbstractSchema
 {
     protected bool $patchMode = false;
     protected string $title = '';
-    protected string $version = '1.0';
+    protected string $version = '2.0';
+    protected array $headerDefinitions = [];
 
     final public function patch(): self
     {
@@ -38,52 +39,53 @@ abstract class AbstractSchema
         return $this;
     }
 
-    /**
-     * @param string $json
-     * @param int $depth
-     * @param int $flags
-     * @return SchemaAccessor
-     * @throws InvalidDataException
-     */
+    final public function withHeaders(array $definitions): self
+    {
+        $this->headerDefinitions = $definitions;
+        return $this;
+    }
+
     final public function processJsonInput(string $json, int $depth = 512, int $flags = 0): SchemaAccessor
     {
-        $data = json_decode($json, true, $depth , $flags);
+        $data = json_decode($json, true, $depth, $flags);
         if (json_last_error() !== JSON_ERROR_NONE) {
             $errorMessage = json_last_error_msg();
-            throw new InvalidDataException($errorMessage);
+            throw new InvalidDataException(Locale::get('error.json', ['error' => $errorMessage]));
         }
         return $this->process($data);
     }
 
-    /**
-     * @param ServerRequestInterface $request
-     * @return SchemaAccessor
-     * @throws InvalidDataException
-     */
     final public function processHttpRequest(ServerRequestInterface $request): SchemaAccessor
     {
+        $this->validateHeaders($request);
+
         if (in_array('application/json', $request->getHeader('Content-Type'))) {
             return $this->processJsonInput($request->getBody()->getContents());
         }
-        return $this->process($request->getParsedBody());
+
+        return $this->processFormHttpRequest($request);
     }
 
-    /**
-     * @param ServerRequestInterface $request
-     * @return SchemaAccessor
-     * @throws InvalidDataException
-     */
+    final public function processFormHttpRequest(ServerRequestInterface $request, ?string $expectedToken = null, string $csrfKey = '_csrf'): SchemaAccessor
+    {
+        $this->validateHeaders($request);
+        $data = $request->getParsedBody();
+
+        if ($expectedToken !== null) {
+            if (!isset($data[$csrfKey]) || !hash_equals($expectedToken, $data[$csrfKey])) {
+                throw new InvalidDataException(Locale::get('error.csrf'));
+            }
+            unset($data[$csrfKey]);
+        }
+
+        return $this->process($data);
+    }
+
     final public function processHttpQuery(ServerRequestInterface $request): SchemaAccessor
     {
         return $this->process($request->getQueryParams(), true);
     }
 
-    /**
-     * @param array $data
-     * @param bool $allowEmptyData
-     * @return SchemaAccessor
-     * @throws InvalidDataException
-     */
     final public function process(array $data, bool $allowEmptyData = false): SchemaAccessor
     {
         $accessor = new SchemaAccessor($data, $this, $allowEmptyData);
@@ -91,10 +93,26 @@ abstract class AbstractSchema
         return $accessor;
     }
 
-    /**
-     * @return array<string, AbstractType>
-     */
     abstract protected function definitions(): array;
+
+    private function validateHeaders(ServerRequestInterface $request): void
+    {
+        if (empty($this->headerDefinitions)) {
+            return;
+        }
+
+        $headerData = [];
+        foreach ($request->getHeaders() as $name => $values) {
+            $headerData[strtolower($name)] = $values[0] ?? null;
+        }
+        $headerDefinitions = [];
+        foreach ($this->headerDefinitions as $name => $definition) {
+            $headerDefinitions[strtolower($name)] = clone $definition;
+        }
+
+        $headerSchema = Schema::create($headerDefinitions);
+        $headerSchema->process($headerData);
+    }
 
     private function getDefinitions(): array
     {
@@ -107,10 +125,7 @@ abstract class AbstractSchema
         return $definitions;
     }
 
-    /**
-     * @return array<string, AbstractType>
-     */
-    final public function copyDefinitions() : array
+    final public function copyDefinitions(): array
     {
         $definitions = [];
         foreach ($this->getDefinitions() as $key => $definition) {
@@ -125,10 +140,6 @@ abstract class AbstractSchema
         foreach ($this->getDefinitions() as $key => $definition) {
             if ($definition instanceof ItemType) {
                 $data[$key] = $definition->getExample() ?: $definition->copySchema()->generateExampleData();
-                continue;
-            }
-            if ($definition instanceof ArrayOfType) {
-                $data[$key][] = $definition->getExample();
                 continue;
             }
             $data[$key] = $definition->getExample();

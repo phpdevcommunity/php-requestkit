@@ -1,10 +1,10 @@
 <?php
 
-namespace PhpDevCommunity\RequestKit\Schema;
+namespace Depo\RequestKit\Schema;
 
-use PhpDevCommunity\RequestKit\Builder\SchemaObjectFactory;
-use PhpDevCommunity\RequestKit\Generator\DefinitionGenerator;
-use PhpDevCommunity\RequestKit\Type\AbstractType;
+use Depo\RequestKit\Builder\SchemaObjectFactory;
+use Depo\RequestKit\Generator\DefinitionGenerator;
+use Depo\RequestKit\Type\AbstractType;
 use ReflectionException;
 
 final class Schema extends AbstractSchema

@@ -1,12 +1,12 @@
 <?php
 
-namespace PhpDevCommunity\RequestKit\Hydrator;
+namespace Depo\RequestKit\Hydrator;
 
 use LogicException;
-use PhpDevCommunity\RequestKit\Type\ArrayOfType;
-use PhpDevCommunity\RequestKit\Type\ItemType;
-use PhpDevCommunity\RequestKit\Type\MapType;
-use PhpDevCommunity\RequestKit\Utils\KeyValueObject;
+use Depo\RequestKit\Type\ArrayOfType;
+use Depo\RequestKit\Type\ItemType;
+use Depo\RequestKit\Type\MapType;
+use Depo\RequestKit\Utils\KeyValueObject;
 use ReflectionClass;
 
 final class ObjectHydrator

@@ -1,8 +1,8 @@
 <?php
 
-namespace PhpDevCommunity\RequestKit\Type;
+namespace Depo\RequestKit\Type;
 
-use PhpDevCommunity\RequestKit\ValidationResult;
+use Depo\RequestKit\ValidationResult;
 use PhpDevCommunity\Validator\Assert\StringLength;
 
 abstract class AbstractStringType extends AbstractType
@@ -71,7 +71,7 @@ abstract class AbstractStringType extends AbstractType
             if (empty($value) || !is_string($value)) {
                 return $value;
             }
-            return mb_strtoupper($value);
+            return function_exists('mb_strtoupper') ? mb_strtoupper($value) : strtoupper($value);
         });
         return $this;
     }
@@ -82,7 +82,7 @@ abstract class AbstractStringType extends AbstractType
             if (empty($value) || !is_string($value)) {
                 return $value;
             }
-            return mb_strtolower($value);
+            return function_exists('mb_strtoupper') ? mb_strtolower($value) : strtolower($value);
         });
         return $this;
     }

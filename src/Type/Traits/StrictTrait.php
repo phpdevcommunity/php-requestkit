@@ -1,6 +1,6 @@
 <?php
 
-namespace PhpDevCommunity\RequestKit\Type\Traits;
+namespace Depo\RequestKit\Type\Traits;
 
 trait StrictTrait
 {

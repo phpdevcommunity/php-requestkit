@@ -1,8 +1,8 @@
 <?php
 
-namespace PhpDevCommunity\RequestKit\Builder;
+namespace Depo\RequestKit\Builder;
 
-use PhpDevCommunity\RequestKit\Schema\Schema;
+use Depo\RequestKit\Schema\Schema;
 
 final class SchemaObjectFactory
 {

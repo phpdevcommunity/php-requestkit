@@ -1,33 +1,42 @@
 <?php
 
-namespace PhpDevCommunity\RequestKit\Type;
+namespace Depo\RequestKit\Type;
 
-use PhpDevCommunity\RequestKit\Utils\DateOnly;
-use PhpDevCommunity\RequestKit\ValidationResult;
-use PhpDevCommunity\Validator\Assert\Email;
-use PhpDevCommunity\Validator\Assert\StringLength;
+use Depo\RequestKit\Locale;
+use Depo\RequestKit\Utils\DateOnly;
+use Depo\RequestKit\ValidationResult;
 
 final class DateType extends AbstractType
 {
     private string $format = 'Y-m-d';
+
     public function format(string $format): self
     {
         $this->format = $format;
         return $this;
     }
+
     protected function validateValue(ValidationResult $result): void
     {
-        if (is_string($result->getValue())) {
-            $datetime = DateOnly::createFromFormat($this->format, $result->getValue());
-            if ($datetime === false) {
-                $result->setError("Value must be a valid date for format: " . $this->format);
+        $value = $result->getValue();
+
+        if ($value instanceof \DateTimeInterface) {
+            return;
+        }
+
+        if (is_string($value)) {
+            $datetime = DateOnly::createFromFormat($this->format, $value);
+            if ($datetime === false || $datetime->format($this->format) !== $value) {
+                $result->setError(Locale::get('error.type.date'));
                 return;
             }
             $result->setValue($datetime);
-        }elseif (is_int($result->getValue())) {
+        } elseif (is_int($value)) {
             $datetime = new DateOnly();
-            $datetime->setTimestamp($result->getValue());
+            $datetime->setTimestamp($value);
             $result->setValue($datetime);
+        } else {
+            $result->setError(Locale::get('error.type.date'));
         }
     }
 }

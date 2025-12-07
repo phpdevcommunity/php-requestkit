@@ -1,23 +1,26 @@
 <?php
 
-namespace PhpDevCommunity\RequestKit\Type;
+namespace Depo\RequestKit\Type;
 
-use PhpDevCommunity\RequestKit\Type\Traits\StrictTrait;
-use PhpDevCommunity\RequestKit\ValidationResult;
-use PhpDevCommunity\Validator\Assert\Numeric;
+use Depo\RequestKit\Locale;
+use Depo\RequestKit\Type\Traits\EqualTrait;
+use Depo\RequestKit\ValidationResult;
 
 final class NumericType extends AbstractType
 {
+    use EqualTrait;
+
     protected function validateValue(ValidationResult $result): void
     {
-        if (is_numeric($result->getValue())) {
-            $value = strval($result->getValue());
-            $result->setValue($value);
+        if (!is_numeric($result->getValue())) {
+            $result->setError(Locale::get('error.type.numeric', ['type' => gettype($result->getValue())]));
+            return;
         }
 
-        $validator = new Numeric();
-        if ($validator->validate($result->getValue()) === false) {
-            $result->setError($validator->getError());
+        $result->setValue(strval($result->getValue()));
+
+        if ($this->checkEquals && $result->getValue() !== $this->equalTo) {
+            $result->setError(Locale::get('error.equals'));
         }
     }
 }

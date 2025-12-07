@@ -1,14 +1,15 @@
 <?php
-namespace Test\PhpDevCommunity\RequestKit;
-use PhpDevCommunity\RequestKit\Type\BoolType;
-use PhpDevCommunity\RequestKit\Type\DateTimeType;
-use PhpDevCommunity\RequestKit\Type\DateType;
-use PhpDevCommunity\RequestKit\Type\FloatType;
-use PhpDevCommunity\RequestKit\Type\IntType;
-use PhpDevCommunity\RequestKit\Type\NumericType;
-use PhpDevCommunity\RequestKit\Type\StringType;
+namespace Test\Depo\RequestKit;
+use Depo\RequestKit\Type;
+use Depo\RequestKit\Type\BoolType;
+use Depo\RequestKit\Type\DateTimeType;
+use Depo\RequestKit\Type\DateType;
+use Depo\RequestKit\Type\FloatType;
+use Depo\RequestKit\Type\IntType;
+use Depo\RequestKit\Type\NumericType;
+use Depo\RequestKit\Type\StringType;
 
-class TypeTest extends \PhpDevCommunity\UniTester\TestCase
+class TypeTest extends \Depo\UniTester\TestCase
 {
 
     protected function setUp(): void
@@ -29,7 +30,61 @@ class TypeTest extends \PhpDevCommunity\UniTester\TestCase
         $this->testDateTimeType();
         $this->testDateType();
         $this->testNumericType();
+        $this->testEqualsConstraint(); // Add new test method
     }
+
+    private function testEqualsConstraint()
+    {
+        // 1. String equals: success
+        $type = Type::string()->equals('admin');
+        $result = $type->validate('admin');
+        $this->assertTrue($result->isValid());
+        $this->assertStrictEquals('admin', $result->getValue());
+
+        // 2. String equals: failure
+        $type = Type::string()->equals('admin');
+        $result = $type->validate('user');
+        $this->assertFalse($result->isValid());
+        $this->assertEquals('The value does not match the expected value.', $result->getError());
+
+        // 3. Integer equals: success
+        $type = Type::int()->equals(123);
+        $result = $type->validate(123);
+        $this->assertTrue($result->isValid());
+        $this->assertStrictEquals(123, $result->getValue());
+
+        // 4. Integer equals: failure
+        $type = Type::int()->equals(123);
+        $result = $type->validate(456);
+        $this->assertFalse($result->isValid());
+        $this->assertEquals('The value does not match the expected value.', $result->getError());
+
+        // 5. Optional field with equals: success on null
+        $type = Type::string()->equals('secret_token')->optional();
+        $result = $type->validate(null);
+        $this->assertTrue($result->isValid());
+        $this->assertNull($result->getValue());
+
+        // 6. Required field with equals: failure on null
+        $type = Type::string()->equals('secret_token')->required();
+        $result = $type->validate(null);
+        $this->assertFalse($result->isValid());
+        $this->assertEquals('Value is required, but got null or empty string.', $result->getError());
+
+        // 7. Equals after transformation
+        $type = Type::string()->lowercase()->equals('admin');
+        $result = $type->validate('ADMIN');
+        $this->assertTrue($result->isValid());
+        $this->assertStrictEquals('admin', $result->getValue());
+
+        // 8. Security check: Ensure error message does not leak sensitive data
+        $secret = 'super_secret_api_key_12345';
+        $type = Type::string()->equals($secret);
+        $result = $type->validate('wrong_key');
+        $this->assertFalse($result->isValid());
+        $this->assertEquals('The value does not match the expected value.', $result->getError());
+    }
+
 
     private function testStringType()
     {
@@ -50,13 +105,13 @@ class TypeTest extends \PhpDevCommunity\UniTester\TestCase
         $type->length(10, 20);
         $result = $type->validate("  test  ");
         $this->assertFalse($result->isValid());
-        $this->assertEquals('test must be at least 10 characters long', $result->getError());
+        $this->assertEquals('Value must be at least 10 characters long.', $result->getError());
 
 
         $type->length(1, 3);
         $result = $type->validate("  test  ");
         $this->assertFalse($result->isValid());
-        $this->assertEquals('test cannot be longer than 3 characters', $result->getError());
+        $this->assertEquals('Value cannot be longer than 3 characters.', $result->getError());
 
         $type->length(10, 20)->optional();
         $result = $type->validate(null);
@@ -66,7 +121,7 @@ class TypeTest extends \PhpDevCommunity\UniTester\TestCase
         $type->required();
         $result = $type->validate(null);
         $this->assertFalse($result->isValid());
-        $this->assertEquals('Value is required, but got null or empty string', $result->getError());
+        $this->assertEquals('Value is required, but got null or empty string.', $result->getError());
 
 
         $type->length(1);
@@ -78,7 +133,7 @@ class TypeTest extends \PhpDevCommunity\UniTester\TestCase
         $type->strict();
         $result = $type->validate(123);
         $this->assertFalse($result->isValid());
-        $this->assertEquals('Value must be a string, got: integer', $result->getError());
+        $this->assertEquals('Value must be a string, got: integer.', $result->getError());
 
 
         $type->uppercase();

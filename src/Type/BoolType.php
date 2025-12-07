@@ -1,37 +1,39 @@
 <?php
 
-namespace PhpDevCommunity\RequestKit\Type;
+namespace Depo\RequestKit\Type;
 
-use PhpDevCommunity\RequestKit\Type\Traits\StrictTrait;
-use PhpDevCommunity\RequestKit\ValidationResult;
-use PhpDevCommunity\Validator\Assert\Boolean;
+use Depo\RequestKit\Locale;
+use Depo\RequestKit\Type\Traits\EqualTrait;
+use Depo\RequestKit\Type\Traits\StrictTrait;
+use Depo\RequestKit\ValidationResult;
 
 final class BoolType extends AbstractType
 {
-
     use StrictTrait;
+    use EqualTrait;
 
     protected function validateValue(ValidationResult $result): void
     {
-        if ($this->isStrict() && !is_bool($result->getValue())) {
-            $result->setError("Value must be a boolean, got: " . gettype($result->getValue()));
+        $value = $result->getValue();
+
+        if ($this->isStrict() && !is_bool($value)) {
+            $result->setError(Locale::get('error.type.bool', ['type' => gettype($value)]));
             return;
         }
 
-        if ($this->isStrict() === false && !is_bool($result->getValue())) {
-            if (in_array($result->getValue(), [1, '1', 'true', 'on', 'TRUE', 'ON'], true)) {
+        if ($this->isStrict() === false && !is_bool($value)) {
+            if (in_array($value, [1, '1', 'true', 'on', 'TRUE', 'ON'], true)) {
                 $result->setValue(true);
-            }elseif (in_array($result->getValue(), [0, '0', 'false', 'off', 'FALSE', 'OFF'], true)) {
+            } elseif (in_array($value, [0, '0', 'false', 'off', 'FALSE', 'OFF'], true)) {
                 $result->setValue(false);
-            }else {
-                $result->setError("Value must be a boolean, got: " . gettype($result->getValue()));
+            } else {
+                $result->setError(Locale::get('error.type.bool', ['type' => gettype($value)]));
                 return;
             }
         }
 
-        $validator = new Boolean();
-        if ($validator->validate($result->getValue()) === false) {
-            $result->setError($validator->getError());
+        if ($this->checkEquals && $result->getValue() !== $this->equalTo) {
+            $result->setError(Locale::get('error.equals'));
         }
     }
 }

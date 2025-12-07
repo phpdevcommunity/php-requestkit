@@ -1,8 +1,8 @@
 <?php
 
-namespace PhpDevCommunity\RequestKit;
+namespace Depo\RequestKit;
 
-use PhpDevCommunity\RequestKit\Schema\SchemaAccessor;
+use Depo\RequestKit\Schema\SchemaAccessor;
 
 final class ValidationResult
 {

@@ -1,6 +1,6 @@
 <?php
 
-namespace PhpDevCommunity\RequestKit\Exceptions;
+namespace Depo\RequestKit\Exceptions;
 
 class InvalidDataException extends \Exception
 {

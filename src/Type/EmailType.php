@@ -1,18 +1,16 @@
 <?php
 
-namespace PhpDevCommunity\RequestKit\Type;
+namespace Depo\RequestKit\Type;
 
-use PhpDevCommunity\RequestKit\ValidationResult;
-use PhpDevCommunity\Validator\Assert\Email;
-use PhpDevCommunity\Validator\Assert\StringLength;
+use Depo\RequestKit\Locale;
+use Depo\RequestKit\ValidationResult;
 
 final class EmailType extends AbstractStringType
 {
     protected function validateValue(ValidationResult $result): void
     {
-        $validator = new Email();
-        if ($validator->validate($result->getValue()) === false) {
-            $result->setError($validator->getError());
+        if (filter_var($result->getValue(), FILTER_VALIDATE_EMAIL) === false) {
+            $result->setError(Locale::get('error.string.email'));
         }
     }
 }

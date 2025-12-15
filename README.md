@@ -1,3 +1,8 @@
+> ⚠️ **Abandoned package**
+>
+> This package is abandoned and no longer maintained.  
+> The author suggests using **[michel/requestkit](https://github.com/michelphp/requestkit)** instead.
+
 # php-requestkit
 
 **Lightweight and efficient PHP library for robust request data validation and transformation.**
